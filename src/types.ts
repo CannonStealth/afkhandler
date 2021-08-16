@@ -1,13 +1,13 @@
 import { ClientOptions as DJSClientOptions, Message, Collection } from "discord.js";
 
-export namespace ClientTypes {
-  export interface ClientOptions {
+export namespace AFKHandlerTypes {
+  export interface AFKHandlerOptions {
     client: DJSClientOptions;
     eval?: boolean;
     gadget?: unknown;
   }
 
-  export interface Client<T = unknown> {
+  export interface AFKHandler<T = unknown> {
     gadget: T;
     commands: Collection<string, Command>
     aliases: Collection<string, string>
@@ -16,11 +16,11 @@ export namespace ClientTypes {
 
   export type Callback<T = unknown> = (
     destructureThis: {
-      client: Client<T>;
+      client: AFKHandler<T>;
       args: string[];
       message: Message;
     },
-    gadget: Client["gadget"]
+    gadget: AFKHandler["gadget"]
   ) => unknown;
 
   export interface Command<T = unknown> {
@@ -37,6 +37,6 @@ export namespace ClientTypes {
 
   export interface CommandsOptions {
     category?: string
-    callback?: (file: ClientTypes.Command) => unknown
+    callback?: (file: Command) => unknown
   }
 }

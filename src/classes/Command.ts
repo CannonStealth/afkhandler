@@ -1,12 +1,12 @@
-import { ClientTypes } from "../types";
+import { AFKHandlerTypes } from "../types";
 
-export default class Command implements ClientTypes.Command {
+export default class Command implements AFKHandlerTypes.Command {
     public name: string;
     public aliases?: string[]
     public category?: string
-    public callback?: ClientTypes.Callback
+    public callback?: AFKHandlerTypes.Callback
 
-    constructor(options: ClientTypes.Command) {
+    constructor(options: AFKHandlerTypes.Command) {
     this.name = options.name
     this.aliases = options.aliases
     this.category = options.category
