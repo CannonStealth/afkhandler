@@ -1,4 +1,4 @@
-import { ClientOptions as DJSClientOptions, Message } from "discord.js";
+import { ClientOptions as DJSClientOptions, Message, Collection } from "discord.js";
 
 export namespace ClientTypes {
   export interface ClientOptions {
@@ -9,6 +9,9 @@ export namespace ClientTypes {
 
   export interface Client<T = unknown> {
     gadget: T;
+    commands: Collection<string, Command>
+    aliases: Collection<string, string>
+    categories: Collection<string, string[]>
   }
 
   export type Callback<T = unknown> = (
@@ -30,5 +33,10 @@ export namespace ClientTypes {
     fire?: this["callback"];
     emit?: this["callback"];
 
+  }
+
+  export interface CommandsOptions {
+    category?: string
+    callback?: (file: ClientTypes.Command) => unknown
   }
 }
