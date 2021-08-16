@@ -50,5 +50,3 @@ export default class Client<T = unknown> extends DJSClient implements ClientType
     })
   }
 }
-
-const client = new Client({ client: { intents: 2 } });
