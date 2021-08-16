@@ -1,4 +1,8 @@
-import Client from "./Client"
+import Client from "./classes/Client"
+import Command from "./classes/Command"
 
-export default Client;
-module.exports = Client;
+
+
+export { Command }
+export default Client 
+module.exports = Client
