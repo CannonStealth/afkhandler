@@ -1,5 +1,11 @@
-import { Client as DJSClient, ClientApplication, Collection } from "discord.js";
-import { AFKHandlerTypes } from "../types";
+import {
+  Client as DJSClient,
+  ClientApplication,
+  Collection,
+  Snowflake,
+  TextChannel,
+} from "discord.js";
+import { AFKHandlerTypes, DJSSend } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
@@ -12,6 +18,7 @@ export default class AFKHandler<T = unknown>
   public commands: Collection<string, AFKHandlerTypes.Command>;
   public aliases: Collection<string, string>;
   public categories: Collection<string, string[]>;
+  public developers?: Snowflake[];
 
   constructor(options: AFKHandlerTypes.AFKHandlerOptions) {
     super(options.client);
@@ -19,6 +26,7 @@ export default class AFKHandler<T = unknown>
     this.commands = new Collection();
     this.aliases = new Collection();
     this.categories = new Collection();
+    this.developers = options.developers ? [...options.developers] : undefined;
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
@@ -81,11 +89,49 @@ export default class AFKHandler<T = unknown>
       )
         return;
 
-      const cmd =
-        this.commands.get(cmdName!.toLowerCase()) ||
-        this.commands.get(this.aliases.get(cmdName!.toLowerCase())!); // Get command
+      const cmd = (this.commands.get(cmdName!.toLowerCase()) ||
+        this.commands.get(this.aliases.get(cmdName!.toLowerCase())!))!;
 
       if (!cmd) return;
+
+      if (cmd.dev && !this.developers?.includes(message.author.id)) {
+        if (cmd.devMsg) message.channel.send(cmd.devMsg);
+        return;
+      }
+
+      if (
+        cmd.nsfw &&
+        message.channel instanceof TextChannel &&
+        message.channel.nsfw
+      ) {
+        if (cmd.nsfwMsg) message.channel.send(cmd.nsfwMsg);
+        return;
+      }
+
+      let permissions = cmd.permissions;
+
+      if (permissions) {
+        if (typeof permissions === "string") permissions = [permissions];
+
+        const channel = message.channel as TextChannel;
+        if (
+          !permissions.some(
+            (p) => !channel.permissionsFor(message.member!).has(p)
+          )
+        ) {
+          if (cmd.permissionsMsg) message.channel.send(cmd.permissionsMsg);
+          return;
+        }
+      }
+
+      let guilds = cmd.guilds;
+      if (guilds) {
+        if (typeof guilds === "string") guilds = [guilds];
+        if (!guilds.includes(message.guildId!)) {
+          if (cmd.guildsMsg) message.channel.send(cmd.guildsMsg);
+          return;
+        }
+      }
 
       if (cmd.callback) cmd.run!({ client: this, args, message }, this.gadget);
       if (cmd.run) cmd.run!({ client: this, args, message }, this.gadget);
