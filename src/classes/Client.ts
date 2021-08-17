@@ -22,7 +22,6 @@ export default class AFKHandler<T = unknown>
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
-
   }
 
   private async _loader<T>(dir: string, callback?: (file: T) => unknown) {
@@ -53,12 +52,48 @@ export default class AFKHandler<T = unknown>
 
   public async Commands(
     dir: string,
-    options?: AFKHandlerTypes.CommandsOptions
+    options: AFKHandlerTypes.CommandsOptions
   ): Promise<this | never> {
     if (!dir)
       throw new Error(
         "AFKHandler commands method ERROR: You forgot to specify the directory path in the first parameter"
       );
+
+    if (!options.prefix)
+      throw new Error(
+        "AFKHandler commands method ERROR: You forgot to specify the prefix on options object (2nd paramerer)"
+      );
+
+    this.on("messageCreate", (message) => {
+      if (message.author.bot || message.channel.type === "DM") return;
+
+      const { prefix } = options;
+      if (!message.content.startsWith(prefix)) return;
+
+      const args = message.content.slice(prefix.length).trim().split(/ +/g);
+
+      const cmdName = args.shift();
+
+      if (
+        !message.content.startsWith(
+          `${prefix.toLowerCase()}${cmdName?.toLowerCase()}`
+        )
+      )
+        return;
+
+      const cmd =
+        this.commands.get(cmdName!.toLowerCase()) ||
+        this.commands.get(this.aliases.get(cmdName!.toLowerCase())!); // Get command
+
+      if (!cmd) return;
+
+      if (cmd.callback) cmd.run!({ client: this, args, message }, this.gadget);
+      if (cmd.run) cmd.run!({ client: this, args, message }, this.gadget);
+      if (cmd.execute) cmd.run!({ client: this, args, message }, this.gadget);
+      if (cmd.fire) cmd.run!({ client: this, args, message }, this.gadget);
+      if (cmd.emit) cmd.run!({ client: this, args, message }, this.gadget);
+    });
+
     this._loader<AFKHandlerTypes.Command>(dir, (command) => {
       if (!command.name)
         throw new Error(

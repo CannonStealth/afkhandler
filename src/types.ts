@@ -38,5 +38,6 @@ export namespace AFKHandlerTypes {
   export interface CommandsOptions {
     category?: string
     callback?: (file: Command) => unknown
+    prefix: string;
   }
 }
