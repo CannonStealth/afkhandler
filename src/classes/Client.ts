@@ -2,6 +2,7 @@ import {
   Client as DJSClient,
   ClientApplication,
   Collection,
+  MessageFlags,
   Snowflake,
   TextChannel,
 } from "discord.js";
@@ -82,17 +83,24 @@ export default class AFKHandler<T = unknown>
 
       const cmdName = args.shift();
 
+      if (!cmdName) return;
+
       if (
         !message.content.startsWith(
-          `${prefix.toLowerCase()}${cmdName?.toLowerCase()}`
+          `${prefix.toLowerCase()}${cmdName.toLowerCase()}`
         )
       )
         return;
 
-      const cmd = (this.commands.get(cmdName!.toLowerCase()) ||
-        this.commands.get(this.aliases.get(cmdName!.toLowerCase())!))!;
+      const cmd = (this.commands.get(cmdName.toLowerCase()) ||
+        this.commands.get(this.aliases.get(cmdName.toLowerCase())!));
 
       if (!cmd) return;
+
+      if (cmd.locked) {
+        if (cmd.lockedMsg) message.channel.send(cmd.lockedMsg)
+        return;
+      }
 
       if (cmd.dev && !this.developers?.includes(message.author.id)) {
         if (cmd.devMsg) message.channel.send(cmd.devMsg);
