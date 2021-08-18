@@ -79,8 +79,12 @@ export default class AFKHandler<T = unknown>
   /**
    *
    * @param dir your directory
-   * @param callback Function executed when a command is loaded
-   * @example <AFKHandler>.commands("./commands", (command) => console.log("Loading command " + command.name))
+   * @example client.Commands("./commands", { 
+   * prefix: "!",
+   * category: "Misc",
+   * callback(command) {
+   *  console.log("Loading command " + command.name))
+   * }
    */
 
   public async Commands(
@@ -280,6 +284,13 @@ export default class AFKHandler<T = unknown>
     return this;
   }
 
+  /**
+   * 
+   * @param dir your directory
+   * @param callback function executed when a command is loaded
+   * @example client.SlashCommand("./slash-commands", 
+   * (cmd) => console.log("Loading slash command " + cmd.name))
+   */
   public async SlashCommands(
     dir: string,
     callback?: (file: SlashCommandInterface) => unknown
