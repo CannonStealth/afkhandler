@@ -47,3 +47,4 @@ export default class Command implements Cmd {
     this.hidden = options.hidden
   }
 }
+
