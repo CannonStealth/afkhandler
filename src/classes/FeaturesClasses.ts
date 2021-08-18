@@ -45,7 +45,6 @@ export class Command<T = unknown> implements Cmd<T> {
   }
 }
 
-
 export class SlashCommand<T = unknown> implements Scmd<T> {
   public readonly name: Scmd["name"]
   public readonly help?: Scmd["help"]
@@ -75,3 +74,4 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
     this.cooldownMsg = options.cooldownMsg
   }
 }
+

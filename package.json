@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/CannonStealth/afkhandler#readme",
   "dependencies": {
+    "@types/node": "^16.6.1",
     "discord.js": "^13.1.0",
     "repl": "^0.1.3"
   }

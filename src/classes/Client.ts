@@ -33,7 +33,7 @@ export default class AFKHandler<T = unknown>
   public slashCommands: Collection<string, SlashCommandInterface>;
 
   constructor(options: AFKHandlerOptions<T>) {
-    super(options.client);
+    super(options?.client);
 
     this.commands = new Collection();
     this.aliases = new Collection();
@@ -47,10 +47,10 @@ export default class AFKHandler<T = unknown>
   }
 
   private async _loader<T>(dir: string, callback?: (file: T) => unknown) {
-    const files = await readdir(join(__dirname, dir));
+    const files = await readdir(join(process.cwd, dir));
     for (const file of files) {
-      const stat = await lstat(join(__dirname, dir, file));
-      if (stat.isDirectory()) this._loader(join(__dirname, dir));
+      const stat = await lstat(join(process.cwd, dir, file));
+      if (stat.isDirectory()) this._loader(join(process.cwd, dir));
       else if (
         !file.endsWith(".js") &&
         !file.endsWith(".coffee") &&
@@ -58,7 +58,7 @@ export default class AFKHandler<T = unknown>
       )
         continue;
 
-      const imported = (await import(join(__dirname, dir, file))).default;
+      const imported = (await import(join(process.cwd, dir, file))).default;
 
       console.log(file);
       if (callback) callback!(imported);
@@ -85,7 +85,7 @@ export default class AFKHandler<T = unknown>
         "AFKHandler commands method ERROR: You forgot to specify the directory path in the first parameter"
       );
 
-    if (!options.prefix)
+    if (!options?.prefix)
       throw new Error(
         "AFKHandler commands method ERROR: You forgot to specify the prefix on options object (2nd paramerer)"
       );
@@ -153,6 +153,7 @@ export default class AFKHandler<T = unknown>
         }
       }
 
+
       let botPermissions = cmd.botPermissions;
 
       if (botPermissions) {
@@ -171,6 +172,8 @@ export default class AFKHandler<T = unknown>
           return;
         }
       }
+
+      
 
       let permissions = cmd.permissions;
 
