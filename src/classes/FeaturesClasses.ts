@@ -57,6 +57,8 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
   public readonly type?: Scmd["type"]
   public readonly guilds?: Scmd["guilds"]
   public readonly guildsMsg?: Scmd["guildsMsg"]
+  public readonly cooldown?: Scmd["cooldown"]
+  public readonly cooldownMsg?: Scmd["cooldownMsg"]
 
   constructor(options: Scmd<T>) {
     this.name = options.name
@@ -69,5 +71,7 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
     this.type = options.type
     this.guilds = options.guilds
     this.guildsMsg = options.guildsMsg
+    this.cooldown = options.cooldown
+    this.cooldownMsg = options.cooldownMsg
   }
 }

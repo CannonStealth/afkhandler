@@ -11,6 +11,7 @@ import {
   User,
   ApplicationCommandOptionData,
   ApplicationCommandType,
+  InteractionReplyOptions
 } from "discord.js";
 
 import AFKHandler from "./classes/Client";
@@ -24,6 +25,7 @@ export type RenameKey<T, S extends string, V> = {
 export type Awaited<T> = T | Promise<T>;
 export type Arrayed<T> = T | T[];
 export type DJSSend = string | MessagePayload | MessageOptions;
+export type SlashSend = string | MessagePayload | InteractionReplyOptions
 
 export interface AFKHandlerOptions<T = unknown> {
   client: DJSClientOptions;
@@ -93,9 +95,10 @@ export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
 
 interface SlashCommandReturns {
   guilds: Arrayed<Snowflake>
+  cooldown: string | number
 }
 
-type SlashCommandReturnedMessage = Partial<RenameKey<SlashCommandReturns, "Msg", DJSSend>>
+type SlashCommandReturnedMessage = Partial<RenameKey<SlashCommandReturns, "Msg", SlashSend>>
 
 export interface SlashCommandInterface<T = unknown> extends SlashCommandReturnedMessage {
   name: string;

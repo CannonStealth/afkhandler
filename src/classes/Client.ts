@@ -1,11 +1,20 @@
 import {
   Client as DJSClient,
   Collection,
+  Guild,
+  GuildMember,
   Message,
   Snowflake,
   TextChannel,
+  User,
 } from "discord.js";
-import { DJSSend, CommandInterface as Command, AFKHandlerOptions, CommandsOptions, SlashCommandInterface } from "../types";
+import {
+  DJSSend,
+  CommandInterface as Command,
+  AFKHandlerOptions,
+  CommandsOptions,
+  SlashCommandInterface,
+} from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
@@ -32,7 +41,7 @@ export default class AFKHandler<T = unknown>
   public categories: Collection<string, string[]>;
   public developers?: Snowflake[];
   public cooldowns: Collection<string, number>;
-  public slashCommands: Collection<string, SlashCommandInterface>
+  public slashCommands: Collection<string, SlashCommandInterface>;
 
   constructor(options: AFKHandlerOptions<T>) {
     super(options.client);
@@ -42,7 +51,7 @@ export default class AFKHandler<T = unknown>
     this.categories = new Collection();
     this.developers = options.developers ? [...options.developers] : undefined;
     this.cooldowns = new Collection();
-    this.slashCommands = new Collection()
+    this.slashCommands = new Collection();
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
@@ -214,7 +223,12 @@ export default class AFKHandler<T = unknown>
         result = await cmd.emit({ client: this, args, message }, this.gadget);
 
       if (result === true && cmd.cooldown) {
-        this._setCooldown(message, cmd.cooldown, prefix);
+        this._setCooldown(
+          cmd.name,
+          message.guild!,
+          message.author,
+          cmd.cooldown
+        );
       }
     });
 
@@ -251,7 +265,9 @@ export default class AFKHandler<T = unknown>
         for (const alias of command.aliases)
           this.aliases.set(alias.toLowerCase(), command.name);
 
-      const category = (command.help?.category || options?.category)?.toLowerCase();
+      const category = (
+        command.help?.category || options?.category
+      )?.toLowerCase();
       if (!category) return;
 
       let categoryGetter = this.categories.get(category);
@@ -264,10 +280,78 @@ export default class AFKHandler<T = unknown>
     return this;
   }
 
-  public async SlashCommands(dir: string, callback?: (file: SlashCommandInterface) => unknown) {
-
+  public async SlashCommands(
+    dir: string,
+    callback?: (file: SlashCommandInterface) => unknown
+  ) {
     const application = this.application;
-    if (!application) throw new Error("AFKHandler SlashCommands function ERROR: Client isn't logged in, please log in to publish slash commands") 
+    if (!application)
+      throw new Error(
+        "AFKHandler SlashCommands function ERROR: Client isn't logged in, please log in to publish slash commands"
+      );
+
+    this.on("interactionCreate", async (interaction) => {
+      if (!interaction.inGuild() && interaction.isCommand()) {
+        return interaction.reply("Try using slash commands in a guild!");
+      }
+
+      if (interaction.isCommand()) {
+        const cmd = this.slashCommands.get(interaction.commandName);
+
+        if (!cmd) return;
+
+        const user = interaction.user;
+        const guild = interaction.guild!;
+
+        if (cmd.cooldown) {
+          const cooldown = this.cooldowns.get(
+            interaction.commandName + guild.id + user.id
+          );
+
+          if (cooldown) {
+            if (Date.now() < cooldown) {
+              if (cmd.cooldownMsg) interaction.reply(cmd.cooldownMsg);
+              return;
+            }
+          }
+        }
+
+        const member = await guild.members.fetch(user.id);
+
+        let result;
+        if (cmd.callback)
+          result = cmd.callback(
+            { client: this, interaction, member, guild, user },
+            this.gadget
+          );
+        if (cmd.run)
+          result = cmd.run(
+            { client: this, interaction, member, guild, user },
+            this.gadget
+          );
+        if (cmd.execute)
+          result = cmd.execute(
+            { client: this, interaction, member, guild, user },
+            this.gadget
+          );
+        if (cmd.fire)
+          result = cmd.fire(
+            { client: this, interaction, member, guild, user },
+            this.gadget
+          );
+        if (cmd.emit)
+          result = cmd.emit(
+            { client: this, interaction, member, guild, user },
+            this.gadget
+          );
+
+        if (result === true && cmd.cooldown)
+          this._setCooldown(cmd.name, guild, user, cmd.cooldown);
+        return;
+      }
+
+      return;
+    });
 
     this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface) => {
       this.slashCommands.set(file.name, file);
@@ -282,45 +366,35 @@ export default class AFKHandler<T = unknown>
         if (file.guilds && file.guilds.length) {
           for (const guild of file.guilds) {
             application.commands
-              .create(toSend, guild) 
-              .then(() => callback ? callback(file) : undefined)
+              .create(toSend, guild)
+              .then(() => (callback ? callback(file) : undefined))
               .catch((e: string) => {
-                console.log("AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING")
-                throw new Error(e)
-              })
+                console.log(
+                  "AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING"
+                );
+                throw new Error(e);
+              });
           }
         } else {
-          application.commands.create(toSend).then(() => callback ? callback(file) : undefined); // creating the slash command
+          application.commands
+            .create(toSend)
+            .then(() => (callback ? callback(file) : undefined)); // creating the slash command
         }
       }
     });
   }
   private async _setCooldown(
-    message: Message,
-    timer: string | number,
-    prefix: string
+    name: string,
+    guild: Guild,
+    author: User | GuildMember,
+    timer: string | number
   ) {
     let time;
 
     if (typeof timer === "string") time = this.date(timer);
     else time = timer * 1000;
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const cmdName = args.shift();
-
-    if (!cmdName) return;
-
-    const cmd =
-      this.commands.get(cmdName.toLowerCase()) ??
-      this.commands.get(this.aliases.get(cmdName.toLowerCase())!);
-    if (!cmd) return;
-
-    const name = cmd.name;
-
-    this.cooldowns.set(
-      name + message.guild!.id + message.author.id,
-      Date.now() + time
-    );
+    this.cooldowns.set(name + guild.id + author.id, Date.now() + time);
   }
 
   /**
