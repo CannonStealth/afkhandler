@@ -148,6 +148,25 @@ export default class AFKHandler<T = unknown>
         }
       }
 
+      let botPermissions = cmd.botPermissions;
+
+      if (botPermissions) {
+        if (typeof botPermissions === "string")
+          botPermissions = [botPermissions];
+
+        const channel = message.channel as TextChannel;
+
+        if (
+          botPermissions.every(
+            (p) => !channel.permissionsFor(message.member!).has(p)
+          )
+        ) {
+          if (cmd.botPermissionsMsg)
+            message.channel.send(cmd.botPermissionsMsg);
+          return;
+        }
+      }
+
       let permissions = cmd.permissions;
 
       if (permissions) {

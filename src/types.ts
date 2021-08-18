@@ -46,6 +46,7 @@ export namespace AFKHandlerTypes {
       max?: number,
       min?: number,
     }
+    botPermissions: Arrayed<Permissions>
   }
 
   type CommandReturnsMsg = `${keyof CommandReturns}Msg`;
@@ -55,11 +56,16 @@ export namespace AFKHandlerTypes {
   } &
     Partial<CommandReturns>;
 
+    type CommandHelp = {
+      [Property in "description" | "usage" | "example" | "note"]?: string
+    }
+
 
   export interface Command<T = unknown> extends CommandReturnedMessage {
     name: string;
     aliases?: string[];
     category?: string;
+    help?: CommandHelp;
     callback?: Callback<T>;
     run?: this["callback"];
     execute?: this["callback"];

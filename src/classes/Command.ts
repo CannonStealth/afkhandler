@@ -18,6 +18,9 @@ export default class Command implements Cmd {
   public readonly cooldownMsg?: Cmd["cooldownMsg"];
   public readonly args?: Cmd["args"];
   public readonly argsMsg?: Cmd["argsMsg"];
+  public readonly help?: Cmd["help"]
+  public readonly botPermissions?: Cmd["botPermissions"]
+  public readonly botPermissionsMsg?: Cmd["botPermissionsMsg"]
 
   constructor(options: AFKHandlerTypes.Command) {
     this.name = options.name;
@@ -36,5 +39,8 @@ export default class Command implements Cmd {
     this.cooldownMsg = options.cooldownMsg;
     this.args = options.args;
     this.argsMsg = options.argsMsg;
+    this.help = options.help
+    this.botPermissions = options.botPermissions
+    this.botPermissionsMsg = options.botPermissionsMsg
   }
 }
