@@ -236,11 +236,3 @@ export default class AFKHandler<T = unknown>
     })()
   }
 }
-
-const b = new AFKHandler({
-  client: {
-    intents: 3
-  }
-})
-
-console.log(b.date("5h 2m"))
