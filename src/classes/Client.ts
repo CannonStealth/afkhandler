@@ -12,11 +12,13 @@ import {
   AFKHandlerOptions,
   CommandsOptions,
   SlashCommandInterface,
-  EventInterface as Event
+  EventInterface as Event,
+  FeatureInterface
 } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
+import { callbackify } from "util";
 
 export default class AFKHandler<T = unknown>
   extends DJSClient
@@ -413,9 +415,11 @@ export default class AFKHandler<T = unknown>
         }
       }
     });
+
+    return this;
   }
 
-  public async Events(dir: string, callback?: (event: Event, file: string) => unknown) {
+  public Events(dir: string, callback?: (event: Event, file: string) => unknown) {
     this._loader<Event>(dir, (event, file) => {
 
       if (!event.name) throw new Error("AFKHandler events " + file + " ERROR: there's no event name")
@@ -428,7 +432,22 @@ export default class AFKHandler<T = unknown>
       if (callback) callback(event, file)
       
     })
+
+    return this;
   }
+
+  public Features(dir: string, callback: (feature: FeatureInterface, file: string) => unknown) {
+    this._loader<FeatureInterface>(dir, (feature, file) => {
+      const run = feature.run || feature.execute || feature.callback || feature.emit || feature.fire
+
+      if (!run) throw new Error("AFKHandler features " + file + " ERROR: there's no run function")
+
+      run({ client: this, gadget: this.gadget })
+      if (callback) callback(feature, file)
+    })
+
+    return this;
+  } 
   private async _setCooldown(
     name: string,
     guild: Guild,

@@ -13,7 +13,7 @@ import {
   ApplicationCommandType,
   InteractionReplyOptions,
   ClientEvents,
-  Awaited as DJSAwaited
+  Awaited as DJSAwaited,
 } from "discord.js";
 
 import AFKHandler from "./classes/Client";
@@ -27,7 +27,7 @@ export type RenameKey<T, S extends string, V> = {
 export type Awaited<T> = T | Promise<T>;
 export type Arrayed<T> = T | T[];
 export type DJSSend = string | MessagePayload | MessageOptions;
-export type SlashSend = string | MessagePayload | InteractionReplyOptions
+export type SlashSend = string | MessagePayload | InteractionReplyOptions;
 
 export interface AFKHandlerOptions<T = unknown> {
   client: DJSClientOptions;
@@ -43,8 +43,7 @@ export interface AFKHandlerInterface<T = unknown> {
   categories: Collection<string, string[]>;
   developers?: Snowflake[];
   cooldowns: Collection<string, number>;
-  slashCommands: Collection<string, SlashCommandInterface>
-
+  slashCommands: Collection<string, SlashCommandInterface>;
 }
 
 export type Callback<T = unknown> = (
@@ -96,13 +95,16 @@ export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
 }
 
 interface SlashCommandReturns {
-  guilds: Arrayed<Snowflake>
-  cooldown: string | number
+  guilds: Arrayed<Snowflake>;
+  cooldown: string | number;
 }
 
-type SlashCommandReturnedMessage = Partial<RenameKey<SlashCommandReturns, "Msg", SlashSend>>
+type SlashCommandReturnedMessage = Partial<
+  RenameKey<SlashCommandReturns, "Msg", SlashSend>
+>;
 
-export interface SlashCommandInterface<T = unknown> extends SlashCommandReturnedMessage {
+export interface SlashCommandInterface<T = unknown>
+  extends SlashCommandReturnedMessage {
   name: string;
   description: string;
   help?: CommandHelp;
@@ -134,21 +136,33 @@ export type SlashRun<T = unknown> = (
   gadget: AFKHandler<T>["gadget"]
 ) => Awaited<unknown>;
 
-
 export interface EventInterface<T = unknown> {
-  name: keyof ClientEvents,
-  once?: boolean,
-  callback?: EventCallback<T>
-  run?: this["callback"]
-  fire?: this["callback"]
-  execute?: this["callback"]
-  emit?: this["callback"]
+  name: keyof ClientEvents;
+  once?: boolean;
+  callback?: EventCallback<T>;
+  run?: this["callback"];
+  fire?: this["callback"];
+  execute?: this["callback"];
+  emit?: this["callback"];
 }
 
 type EventCallback<T = unknown> = (destructureThis: {
   client: AFKHandler<T>;
   gadget: AFKHandler<T>["gadget"];
-}) => DJSAwaited<void>
+}) => DJSAwaited<void>;
+
+export interface FeatureInterface<T = unknown> {
+  callback?: FeatureCallback<T>;
+  emit?: this["callback"];
+  fire?: this["callback"];
+  run?: this["callback"];
+  execute?: this["callback"];
+}
+
+type FeatureCallback<T = unknown> = (destructureThis: {
+  client: AFKHandler<T>;
+  gadget: AFKHandler<T>["gadget"];
+}) => unknown;
 
 type Permissions =
   | "CREATE_INSTANT_INVITE"

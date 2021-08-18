@@ -1,5 +1,5 @@
 import { Client as DJSClient, Collection, Snowflake } from "discord.js";
-import { CommandInterface as Command, AFKHandlerOptions, CommandsOptions, SlashCommandInterface, EventInterface as Event } from "../types";
+import { CommandInterface as Command, AFKHandlerOptions, CommandsOptions, SlashCommandInterface, EventInterface as Event, FeatureInterface } from "../types";
 export default class AFKHandler<T = unknown> extends DJSClient implements AFKHandler {
     gadget: T;
     commands: Collection<string, Command>;
@@ -28,8 +28,9 @@ export default class AFKHandler<T = unknown> extends DJSClient implements AFKHan
      * @example client.SlashCommand("./slash-commands",
      * (cmd) => console.log("Loading slash command " + cmd.name))
      */
-    SlashCommands(dir: string, callback?: (slashCommand: SlashCommandInterface, fileName: string) => unknown): Promise<void>;
-    Events(dir: string, callback?: (event: Event, file: string) => unknown): Promise<void>;
+    SlashCommands(dir: string, callback?: (slashCommand: SlashCommandInterface, fileName: string) => unknown): Promise<this>;
+    Events(dir: string, callback?: (event: Event, file: string) => unknown): this;
+    Features(dir: string, callback: (feature: FeatureInterface, file: string) => unknown): this;
     private _setCooldown;
     /**
      *

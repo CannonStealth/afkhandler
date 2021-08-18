@@ -1,10 +1,14 @@
 import { CommandInterface as Cmd,
-  EventInterface as Evt, SlashCommandInterface as Scmd } from "../types";
+  EventInterface as Evt, FeatureInterface as Ft, SlashCommandInterface as Scmd } from "../types";
 
 export class Command<T = unknown> implements Cmd<T> {
   public readonly name: Cmd["name"];
   public readonly aliases?: Cmd["aliases"];
-  public readonly callback?: Cmd<T>["callback"];
+  public readonly callback?: Cmd<T>["callback"]
+  public readonly emit?: Cmd<T>["callback"]
+  public readonly run?: Cmd<T>["callback"]
+  public readonly execute?: Cmd<T>["callback"]
+  public readonly fire?: Cmd<T>["callback"]
   public readonly dev?: Cmd["dev"];
   public readonly devMsg?: Cmd["devMsg"];
   public readonly permissions?: Cmd["permissions"];
@@ -25,7 +29,11 @@ export class Command<T = unknown> implements Cmd<T> {
   constructor(options: Cmd<T>) {
     this.name = options.name;
     this.aliases = options.aliases;
-    this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
+    this.callback = options.callback
+    this.emit = options.emit
+    this.execute = options.execute
+    this.fire = options.fire
+    this.run = options.run
     this.dev = options.dev;
     this.devMsg = options.devMsg;
     this.permissions = options.permissions;
@@ -50,6 +58,10 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
   public readonly help?: Scmd["help"]
   public readonly description: Scmd["description"]
   public readonly callback?: Scmd<T>["callback"]
+  public readonly emit?: Scmd<T>["callback"]
+  public readonly run?: Scmd<T>["callback"]
+  public readonly execute?: Scmd<T>["callback"]
+  public readonly fire?: Scmd<T>["callback"]
   public readonly default?: Scmd["default"]
   public readonly options?: Scmd["options"]
   public readonly stop?: Scmd["stop"]
@@ -63,7 +75,11 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
     this.name = options.name
     this.help = options.help
     this.description = options.description
-    this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
+    this.emit = options.emit
+    this.execute = options.execute
+    this.callback = options.callback 
+    this.fire = options.fire
+    this.run = options.run
     this.default = options.default
     this.options = options.options
     this.stop = options.stop
@@ -75,14 +91,45 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
   }
 }
 
-export class Event<T> implements Evt<T> {
+export class Event<T = unknown> implements Evt<T> {
   public readonly name: Evt["name"]
   public readonly once?: Evt["once"]
   public readonly callback?: Evt<T>["callback"]
+  public readonly emit?: Evt<T>["callback"]
+  public readonly run?: Evt<T>["callback"]
+  public readonly execute?: Evt<T>["callback"]
+  public readonly fire?: Evt<T>["callback"]
+
 
   constructor(options: Evt<T>) {
     this.name = options.name
     this.once = options.once 
-    this.callback = options.run || options.callback || options.emit || options.execute || options.fire
+    this.callback = options.callback
+    this.emit = options.emit
+    this.execute = options.execute
+    this.callback = options.callback 
+    this.fire = options.fire
+    this.run = options.run
   }
 }
+
+export class Feature<T = unknown> implements Ft<T> {
+  public readonly callback?: Ft<T>["callback"]
+  public readonly emit?: Ft<T>["callback"]
+  public readonly run?: Ft<T>["callback"]
+  public readonly execute?: Ft<T>["callback"]
+  public readonly fire?: Ft<T>["callback"]
+
+  constructor(options: Evt<T>) {
+    this.callback = options.callback
+    this.emit = options.emit
+    this.execute = options.execute
+    this.callback = options.callback 
+    this.fire = options.fire
+    this.run = options.run
+  }
+}
+
+export default {
+  
+} as Feature
