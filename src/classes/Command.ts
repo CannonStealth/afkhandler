@@ -1,10 +1,12 @@
+import { Collection } from "discord.js";
 import { AFKHandlerTypes } from "../types";
 
 type Cmd = AFKHandlerTypes.Command;
+
+
 export default class Command implements Cmd {
   public readonly name: Cmd["name"];
   public readonly aliases?: Cmd["aliases"];
-  public readonly category?: Cmd["category"];
   public readonly callback?: Cmd["callback"];
   public readonly dev?: Cmd["dev"];
   public readonly devMsg?: Cmd["devMsg"];
@@ -21,11 +23,11 @@ export default class Command implements Cmd {
   public readonly help?: Cmd["help"]
   public readonly botPermissions?: Cmd["botPermissions"]
   public readonly botPermissionsMsg?: Cmd["botPermissionsMsg"]
+  public readonly hidden?: Cmd["hidden"]
 
   constructor(options: AFKHandlerTypes.Command) {
     this.name = options.name;
     this.aliases = options.aliases;
-    this.category = options.category;
     this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
     this.dev = options.dev;
     this.devMsg = options.devMsg;
@@ -42,5 +44,6 @@ export default class Command implements Cmd {
     this.help = options.help
     this.botPermissions = options.botPermissions
     this.botPermissionsMsg = options.botPermissionsMsg
+    this.hidden = options.hidden
   }
 }

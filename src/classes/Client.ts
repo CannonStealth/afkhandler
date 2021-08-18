@@ -248,7 +248,7 @@ export default class AFKHandler<T = unknown>
         for (const alias of command.aliases)
           this.aliases.set(alias.toLowerCase(), command.name);
 
-      const category = (command.category || options?.category)?.toLowerCase();
+      const category = (command.help?.category || options?.category)?.toLowerCase();
       if (!category) return;
 
       let categoryGetter = this.categories.get(category);

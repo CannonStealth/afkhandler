@@ -57,20 +57,20 @@ export namespace AFKHandlerTypes {
     Partial<CommandReturns>;
 
     type CommandHelp = {
-      [Property in "description" | "usage" | "example" | "note"]?: string
+      [Property in "description" | "usage" | "example" | "note" | "category"]?: string
     }
 
 
   export interface Command<T = unknown> extends CommandReturnedMessage {
     name: string;
     aliases?: string[];
-    category?: string;
     help?: CommandHelp;
     callback?: Callback<T>;
     run?: this["callback"];
     execute?: this["callback"];
     fire?: this["callback"];
     emit?: this["callback"];
+    hidden?: boolean | null
   }
 
   export interface CommandsOptions {
