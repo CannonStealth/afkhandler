@@ -16,10 +16,10 @@ export type RenameKey<T, S extends string, V> = {
 export type Arrayed<T> = T | T[];
 export type DJSSend = string | MessagePayload | MessageOptions;
 
-  export interface AFKHandlerOptions {
+  export interface AFKHandlerOptions<T = unknown> {
     client: DJSClientOptions;
     eval?: boolean;
-    gadget?: unknown;
+    gadget?: T;
     developers?: Arrayed<Snowflake>;
   }
 

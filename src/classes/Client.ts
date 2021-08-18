@@ -32,7 +32,7 @@ export default class AFKHandler<T = unknown>
   public developers?: Snowflake[];
   public cooldowns: Collection<string, number>;
 
-  constructor(options: AFKHandlerOptions) {
+  constructor(options: AFKHandlerOptions<T>) {
     super(options.client);
 
     this.commands = new Collection();
