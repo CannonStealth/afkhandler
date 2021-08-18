@@ -10,8 +10,16 @@ import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
 
-
-const format = (text: string) => eval('( ' + text.replace('m', ' * 60 + ').replace('h', ' * 60 * 60 + ').replace('d', ' * 24 * 60 * 60 + ').replace('s',' + 0 + ') + '0 ) * 1000')
+const format = (text: string) =>
+  eval(
+    "( " +
+      text
+        .replace("m", " * 60 + ")
+        .replace("h", " * 60 * 60 + ")
+        .replace("d", " * 24 * 60 * 60 + ")
+        .replace("s", " + 0 + ") +
+      "0 ) * 1000"
+  );
 
 export default class AFKHandler<T = unknown>
   extends DJSClient
@@ -22,7 +30,7 @@ export default class AFKHandler<T = unknown>
   public aliases: Collection<string, string>;
   public categories: Collection<string, string[]>;
   public developers?: Snowflake[];
-  public cooldowns: Collection<string, number>
+  public cooldowns: Collection<string, number>;
 
   constructor(options: AFKHandlerTypes.AFKHandlerOptions) {
     super(options.client);
@@ -31,7 +39,7 @@ export default class AFKHandler<T = unknown>
     this.aliases = new Collection();
     this.categories = new Collection();
     this.developers = options.developers ? [...options.developers] : undefined;
-    this.cooldowns = new Collection()
+    this.cooldowns = new Collection();
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
@@ -96,13 +104,14 @@ export default class AFKHandler<T = unknown>
       )
         return;
 
-      const cmd = (this.commands.get(cmdName.toLowerCase()) ||
-        this.commands.get(this.aliases.get(cmdName.toLowerCase())!));
+      const cmd =
+        this.commands.get(cmdName.toLowerCase()) ||
+        this.commands.get(this.aliases.get(cmdName.toLowerCase())!);
 
       if (!cmd) return;
 
       if (cmd.locked) {
-        if (cmd.lockedMsg) message.channel.send(cmd.lockedMsg)
+        if (cmd.lockedMsg) message.channel.send(cmd.lockedMsg);
         return;
       }
 
@@ -118,6 +127,25 @@ export default class AFKHandler<T = unknown>
       ) {
         if (cmd.nsfwMsg) message.channel.send(cmd.nsfwMsg);
         return;
+      }
+
+      let guilds = cmd.guilds;
+      if (guilds) {
+        if (typeof guilds === "string") guilds = [guilds];
+        if (!guilds.includes(message.guildId!)) {
+          if (cmd.guildsMsg) message.channel.send(cmd.guildsMsg);
+          return;
+        }
+      }
+
+      if (cmd.cooldown) {
+        const cooldown = this.cooldowns.get(
+          cmd.name + message.guild!.id + message.author.id
+        );
+        if (cooldown && cooldown > Date.now()) {
+          if (cmd.cooldownMsg) message.channel.send(cmd.cooldownMsg);
+          return;
+        }
       }
 
       let permissions = cmd.permissions;
@@ -136,32 +164,35 @@ export default class AFKHandler<T = unknown>
         }
       }
 
-      let guilds = cmd.guilds;
-      if (guilds) {
-        if (typeof guilds === "string") guilds = [guilds];
-        if (!guilds.includes(message.guildId!)) {
-          if (cmd.guildsMsg) message.channel.send(cmd.guildsMsg);
-          return;
-        }
+      if (
+        cmd.args &&
+        ((cmd.args.min && args.length < cmd.args.min) ||
+          (cmd.args.max && args.length > cmd.args.max))
+      ) {
+        if (cmd.argsMsg) message.channel.send(cmd.argsMsg);
+        return;
       }
 
-      if (cmd.cooldown) {
-        const cooldown = this.cooldowns.get(cmd.name + message.guild!.id + message.author.id)
-        if (cooldown && cooldown > Date.now()) {
-          if (cmd.cooldownMsg) message.channel.send(cmd.cooldownMsg)
-          return
-        }
-      }
-
-      let result
-      if (cmd.callback) result = await cmd.callback({ client: this, args, message }, this.gadget);
-      if (cmd.run) result = await cmd.run({ client: this, args, message }, this.gadget);
-      if (cmd.execute) result = await cmd.execute({ client: this, args, message }, this.gadget);
-      if (cmd.fire) result = await cmd.fire({ client: this, args, message }, this.gadget);
-      if (cmd.emit) result = await cmd.emit({ client: this, args, message }, this.gadget);
+      let result;
+      if (cmd.callback)
+        result = await cmd.callback(
+          { client: this, args, message },
+          this.gadget
+        );
+      if (cmd.run)
+        result = await cmd.run({ client: this, args, message }, this.gadget);
+      if (cmd.execute)
+        result = await cmd.execute(
+          { client: this, args, message },
+          this.gadget
+        );
+      if (cmd.fire)
+        result = await cmd.fire({ client: this, args, message }, this.gadget);
+      if (cmd.emit)
+        result = await cmd.emit({ client: this, args, message }, this.gadget);
 
       if (result === true && cmd.cooldown) {
-        this._setCooldown(message, cmd.cooldown, prefix)
+        this._setCooldown(message, cmd.cooldown, prefix);
       }
     });
 
@@ -182,7 +213,14 @@ export default class AFKHandler<T = unknown>
           "AFKHandler commands file ERROR: You didn't put any run function on a command"
         );
 
-        if (command.cooldown && typeof command.cooldown === "string" && !(/^(\d+[mhsd]\s?)+$/gi.test(command.cooldown))) throw new Error("AFKHandler commands file ERROR: Invalid time to convert")
+      if (
+        command.cooldown &&
+        typeof command.cooldown === "string" &&
+        !/^(\d+[mhsd]\s?)+$/gi.test(command.cooldown)
+      )
+        throw new Error(
+          "AFKHandler commands file ERROR: Invalid time to convert"
+        );
 
       if (options?.callback) options.callback(command);
       this.commands.set(command.name.toLowerCase(), command);
@@ -203,36 +241,54 @@ export default class AFKHandler<T = unknown>
 
     return this;
   }
-  private async _setCooldown(message: Message, timer: string | number, prefix: string) {
+  private async _setCooldown(
+    message: Message,
+    timer: string | number,
+    prefix: string
+  ) {
+    let time;
 
-  let time;
-    
-  if (typeof timer === 'string') time = this.date(timer);
-  else time = timer * 1000;
+    if (typeof timer === "string") time = this.date(timer);
+    else time = timer * 1000;
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/g);
-  const cmdName = args.shift();
+    const args = message.content.slice(prefix.length).trim().split(/ +/g);
+    const cmdName = args.shift();
 
-  if (!cmdName) return
+    if (!cmdName) return;
 
-  const cmd = this.commands.get(cmdName.toLowerCase()) ?? this.commands.get(this.aliases.get(cmdName.toLowerCase())!);
-  if (!cmd) return;
+    const cmd =
+      this.commands.get(cmdName.toLowerCase()) ??
+      this.commands.get(this.aliases.get(cmdName.toLowerCase())!);
+    if (!cmd) return;
 
-  const name = cmd.name;
+    const name = cmd.name;
 
-  this.cooldowns.set(name + message.guild!.id + message.author.id, Date.now() + time);
+    this.cooldowns.set(
+      name + message.guild!.id + message.author.id,
+      Date.now() + time
+    );
   }
 
   /**
-   * 
+   *
    * @param text time to convert
    * @returns converted
    * @example client.date("5h 2m") // 18120000
    */
   public date(text: string): number | never {
-    text = text.toLowerCase()
-    return /^(\d+[mhsd]\s?)+$/gi.test(text) ? eval('( ' + text.replace('m', ' * 60 + ').replace('h', ' * 60 * 60 + ').replace('d', ' * 24 * 60 * 60 + ').replace('s',' + 0 + ') + '0 ) * 1000') : (() => { 
-      throw new Error("AFKHandler date ERROR: Invalid time to convert")
-    })()
+    text = text.toLowerCase();
+    return /^(\d+[mhsd]\s?)+$/gi.test(text)
+      ? eval(
+          "( " +
+            text
+              .replace("m", " * 60 + ")
+              .replace("h", " * 60 * 60 + ")
+              .replace("d", " * 24 * 60 * 60 + ")
+              .replace("s", " + 0 + ") +
+            "0 ) * 1000"
+        )
+      : (() => {
+          throw new Error("AFKHandler date ERROR: Invalid time to convert");
+        })();
   }
 }

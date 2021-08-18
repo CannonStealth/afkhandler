@@ -42,6 +42,10 @@ export namespace AFKHandlerTypes {
     permissions: Arrayed<Permissions>;
     locked: boolean
     cooldown: string | number
+    args: {
+      max?: number,
+      min?: number,
+    }
   }
 
   type CommandReturnsMsg = `${keyof CommandReturns}Msg`;
