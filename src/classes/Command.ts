@@ -1,10 +1,10 @@
-import { Collection } from "discord.js";
 import { CommandInterface as Cmd } from "../types";
+import { SlashCommandInterface as Scmd } from "../types"
 
-export default class Command implements Cmd {
+export class Command<T = unknown> implements Cmd<T> {
   public readonly name: Cmd["name"];
   public readonly aliases?: Cmd["aliases"];
-  public readonly callback?: Cmd["callback"];
+  public readonly callback?: Cmd<T>["callback"];
   public readonly dev?: Cmd["dev"];
   public readonly devMsg?: Cmd["devMsg"];
   public readonly permissions?: Cmd["permissions"];
@@ -22,7 +22,7 @@ export default class Command implements Cmd {
   public readonly botPermissionsMsg?: Cmd["botPermissionsMsg"]
   public readonly hidden?: Cmd["hidden"]
 
-  constructor(options: Cmd) {
+  constructor(options: Cmd<T>) {
     this.name = options.name;
     this.aliases = options.aliases;
     this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
@@ -45,3 +45,25 @@ export default class Command implements Cmd {
   }
 }
 
+
+export class SlashCommand<T = unknown> implements Scmd<T> {
+  public readonly name: Scmd["name"]
+  public readonly help: Scmd["help"]
+  public readonly description: Scmd["description"]
+  public readonly callback: Scmd<T>["callback"]
+  public readonly default: Scmd["default"]
+  public readonly options: Scmd["options"]
+  public readonly stop: Scmd["stop"]
+  public readonly type: Scmd["type"]
+
+  constructor(options: Scmd<T>) {
+    this.name = options.name
+    this.help = options.help
+    this.description = options.description
+    this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
+    this.default = options.default
+    this.options = options.options
+    this.stop = options.stop
+    this.type = options.type
+  }
+}
