@@ -48,13 +48,15 @@ export class Command<T = unknown> implements Cmd<T> {
 
 export class SlashCommand<T = unknown> implements Scmd<T> {
   public readonly name: Scmd["name"]
-  public readonly help: Scmd["help"]
+  public readonly help?: Scmd["help"]
   public readonly description: Scmd["description"]
-  public readonly callback: Scmd<T>["callback"]
-  public readonly default: Scmd["default"]
-  public readonly options: Scmd["options"]
-  public readonly stop: Scmd["stop"]
-  public readonly type: Scmd["type"]
+  public readonly callback?: Scmd<T>["callback"]
+  public readonly default?: Scmd["default"]
+  public readonly options?: Scmd["options"]
+  public readonly stop?: Scmd["stop"]
+  public readonly type?: Scmd["type"]
+  public readonly guilds?: Scmd["guilds"]
+  public readonly guildsMsg?: Scmd["guildsMsg"]
 
   constructor(options: Scmd<T>) {
     this.name = options.name
@@ -65,5 +67,7 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
     this.options = options.options
     this.stop = options.stop
     this.type = options.type
+    this.guilds = options.guilds
+    this.guildsMsg = options.guildsMsg
   }
 }

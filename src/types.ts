@@ -39,6 +39,8 @@ export interface AFKHandlerInterface<T = unknown> {
   categories: Collection<string, string[]>;
   developers?: Snowflake[];
   cooldowns: Collection<string, number>;
+  slashCommands: Collection<string, SlashCommandInterface>
+
 }
 
 export type Callback<T = unknown> = (
@@ -89,7 +91,13 @@ export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
   hidden?: boolean | null;
 }
 
-export interface SlashCommandInterface<T = unknown> {
+interface SlashCommandReturns {
+  guilds: Arrayed<Snowflake>
+}
+
+type SlashCommandReturnedMessage = Partial<RenameKey<SlashCommandReturns, "Msg", DJSSend>>
+
+export interface SlashCommandInterface<T = unknown> extends SlashCommandReturnedMessage {
   name: string;
   description: string;
   help?: CommandHelp;

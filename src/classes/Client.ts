@@ -5,10 +5,11 @@ import {
   Snowflake,
   TextChannel,
 } from "discord.js";
-import { DJSSend, CommandInterface as Command, AFKHandlerOptions, CommandsOptions } from "../types";
+import { DJSSend, CommandInterface as Command, AFKHandlerOptions, CommandsOptions, SlashCommandInterface } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
+import { SlashCommand } from "./Command";
 
 const format = (text: string) =>
   eval(
@@ -31,6 +32,7 @@ export default class AFKHandler<T = unknown>
   public categories: Collection<string, string[]>;
   public developers?: Snowflake[];
   public cooldowns: Collection<string, number>;
+  public slashCommands: Collection<string, SlashCommandInterface>
 
   constructor(options: AFKHandlerOptions<T>) {
     super(options.client);
@@ -40,6 +42,7 @@ export default class AFKHandler<T = unknown>
     this.categories = new Collection();
     this.developers = options.developers ? [...options.developers] : undefined;
     this.cooldowns = new Collection();
+    this.slashCommands = new Collection()
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
@@ -259,6 +262,38 @@ export default class AFKHandler<T = unknown>
     });
 
     return this;
+  }
+
+  public async SlashCommands(dir: string, callback?: (file: SlashCommandInterface) => unknown) {
+
+    const application = this.application;
+    if (!application) throw new Error("AFKHandler SlashCommands function ERROR: Client isn't logged in, please log in to publish slash commands") 
+
+    this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface) => {
+      this.slashCommands.set(file.name, file);
+      if (!file.stop) {
+        const toSend = {
+          name: file.name,
+          description: file.description,
+          defaultPermission: file.default,
+          options: file.options,
+        };
+
+        if (file.guilds && file.guilds.length) {
+          for (const guild of file.guilds) {
+            application.commands
+              .create(toSend, guild) 
+              .then(() => callback ? callback(file) : undefined)
+              .catch((e: string) => {
+                console.log("AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING")
+                throw new Error(e)
+              })
+          }
+        } else {
+          application.commands.create(toSend).then(() => callback ? callback(file) : undefined); // creating the slash command
+        }
+      }
+    });
   }
   private async _setCooldown(
     message: Message,
