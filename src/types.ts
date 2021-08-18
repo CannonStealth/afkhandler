@@ -117,7 +117,7 @@ export interface SlashCommandInterface<T = unknown> extends SlashCommandReturned
 
 export interface CommandsOptions {
   category?: string;
-  callback?: (file: CommandInterface) => unknown;
+  callback?: (file: CommandInterface, fileName: string) => unknown;
   prefix: string;
 }
 

@@ -227,7 +227,7 @@ export default class AFKHandler<T = unknown>
       }
     });
 
-    this._loader<Command>(dir, (command) => {
+    this._loader<Command>(dir, (command, file) => {
       if (!command.name)
         throw new Error(
           "AFKHandler commands file ERROR: You didn't put any name on a command"
@@ -253,7 +253,7 @@ export default class AFKHandler<T = unknown>
           "AFKHandler commands file ERROR: Invalid time to convert"
         );
 
-      if (options?.callback) options.callback(command);
+      if (options?.callback) options.callback(command, file);
       this.commands.set(command.name.toLowerCase(), command);
 
       if (command.aliases)
@@ -284,7 +284,7 @@ export default class AFKHandler<T = unknown>
    */
   public async SlashCommands(
     dir: string,
-    callback?: (file: SlashCommandInterface) => unknown
+    callback?: (slashCommand: SlashCommandInterface, fileName: string) => unknown
   ) {
     const application = this.application;
     if (!application)
@@ -355,7 +355,7 @@ export default class AFKHandler<T = unknown>
       return;
     });
 
-    this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface) => {
+    this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface, fileName) => {
       this.slashCommands.set(file.name, file);
       if (!file.stop) {
         const toSend = {
@@ -369,7 +369,7 @@ export default class AFKHandler<T = unknown>
           for (const guild of file.guilds) {
             application.commands
               .create(toSend, guild)
-              .then(() => (callback ? callback(file) : undefined))
+              .then(() => (callback ? callback(file, fileName) : undefined))
               .catch((e: string) => {
                 console.log(
                   "AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING"
@@ -380,7 +380,7 @@ export default class AFKHandler<T = unknown>
         } else {
           application.commands
             .create(toSend)
-            .then(() => (callback ? callback(file) : undefined)); // creating the slash command
+            .then(() => (callback ? callback(file, fileName) : undefined)); // creating the slash command
         }
       }
     });
