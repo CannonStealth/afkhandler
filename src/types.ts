@@ -11,7 +11,9 @@ import {
   User,
   ApplicationCommandOptionData,
   ApplicationCommandType,
-  InteractionReplyOptions
+  InteractionReplyOptions,
+  ClientEvents,
+  Awaited as DJSAwaited
 } from "discord.js";
 
 import AFKHandler from "./classes/Client";
@@ -131,6 +133,22 @@ export type SlashRun<T = unknown> = (
   },
   gadget: AFKHandler<T>["gadget"]
 ) => Awaited<unknown>;
+
+
+export interface EventInterface<T = unknown> {
+  name: keyof ClientEvents,
+  once?: boolean,
+  callback?: EventCallback<T>
+  run?: this["callback"]
+  fire?: this["callback"]
+  execute?: this["callback"]
+  emit?: this["callback"]
+}
+
+type EventCallback<T = unknown> = (destructureThis: {
+  client: AFKHandler<T>;
+  gadget: AFKHandler<T>["gadget"];
+}) => DJSAwaited<void>
 
 type Permissions =
   | "CREATE_INSTANT_INVITE"

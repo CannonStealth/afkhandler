@@ -1,5 +1,4 @@
-import { CommandInterface as Cmd } from "../types";
-import { SlashCommandInterface as Scmd } from "../types";
+import { CommandInterface as Cmd, EventInterface as Evt, SlashCommandInterface as Scmd } from "../types";
 export declare class Command<T = unknown> implements Cmd<T> {
     readonly name: Cmd["name"];
     readonly aliases?: Cmd["aliases"];
@@ -36,4 +35,10 @@ export declare class SlashCommand<T = unknown> implements Scmd<T> {
     readonly cooldown?: Scmd["cooldown"];
     readonly cooldownMsg?: Scmd["cooldownMsg"];
     constructor(options: Scmd<T>);
+}
+export declare class Event<T> implements Evt<T> {
+    readonly name: Evt["name"];
+    readonly once?: Evt["once"];
+    readonly callback?: Evt<T>["callback"];
+    constructor(options: Evt<T>);
 }

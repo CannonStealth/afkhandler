@@ -3,22 +3,20 @@ import {
   Collection,
   Guild,
   GuildMember,
-  Message,
   Snowflake,
   TextChannel,
   User,
 } from "discord.js";
 import {
-  DJSSend,
   CommandInterface as Command,
   AFKHandlerOptions,
   CommandsOptions,
   SlashCommandInterface,
+  EventInterface as Event
 } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
-import { SlashCommand } from "./FeaturesClasses";
 
 export default class AFKHandler<T = unknown>
   extends DJSClient
@@ -230,7 +228,7 @@ export default class AFKHandler<T = unknown>
     this._loader<Command>(dir, (command, file) => {
       if (!command.name)
         throw new Error(
-          "AFKHandler commands file ERROR: You didn't put any name on a command"
+          "AFKHandler commands " + file + " ERROR: You didn't put any name on a command"
         );
 
       if (
@@ -241,7 +239,7 @@ export default class AFKHandler<T = unknown>
         !command.fire
       )
         throw new Error(
-          "AFKHandler commands file ERROR: You didn't put any run function on a command"
+          "AFKHandler commands " + file + " ERROR: You didn't put any run function on a command"
         );
 
       if (
@@ -250,10 +248,9 @@ export default class AFKHandler<T = unknown>
         !/^(\d+[mhsd]\s?)+$/gi.test(command.cooldown)
       )
         throw new Error(
-          "AFKHandler commands file ERROR: Invalid time to convert"
+          "AFKHandler commands " + file + " ERROR: Invalid time to convert"
         );
 
-      if (options?.callback) options.callback(command, file);
       this.commands.set(command.name.toLowerCase(), command);
 
       if (command.aliases)
@@ -263,13 +260,18 @@ export default class AFKHandler<T = unknown>
       const category = (
         command.help?.category || options?.category
       )?.toLowerCase();
-      if (!category) return;
+      if (!category) {
+         if (options?.callback) options.callback(command, file);
+         return;
+      }
 
       let categoryGetter = this.categories.get(category);
       if (!categoryGetter) categoryGetter = [category];
       categoryGetter.push(command.name.toLowerCase());
 
       this.categories.set(category, categoryGetter);
+
+      if (options?.callback) options.callback(command, file);
     });
 
     return this;
@@ -356,6 +358,33 @@ export default class AFKHandler<T = unknown>
     });
 
     this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface, fileName) => {
+
+      if (!file.name)
+        throw new Error(
+          "AFKHandler commands " + fileName + " ERROR: You didn't put any name on a command"
+        );
+
+      if (
+        !file.callback &&
+        !file.run &&
+        !file.emit &&
+        !file.execute &&
+        !file.fire
+      )
+        throw new Error(
+          "AFKHandler commands " + fileName + " ERROR: You didn't put any run function on a command"
+        );
+
+      if (
+        file.cooldown &&
+        typeof file.cooldown === "string" &&
+        !/^(\d+[mhsd]\s?)+$/gi.test(file.cooldown)
+      )
+        throw new Error(
+          "AFKHandler commands " + fileName + " ERROR: Invalid time to convert"
+        );
+
+
       this.slashCommands.set(file.name, file);
       if (!file.stop) {
         const toSend = {
@@ -384,6 +413,21 @@ export default class AFKHandler<T = unknown>
         }
       }
     });
+  }
+
+  public async Events(dir: string, callback?: (event: Event, file: string) => unknown) {
+    this._loader<Event>(dir, (event, file) => {
+
+      if (!event.name) throw new Error("AFKHandler events " + file + " ERROR: there's no event name")
+      const fun = event.callback || event.run || event.execute || event.fire || event.emit
+
+      if (!fun) throw new Error("AFKHandler events " + file + " ERROR: there's no run function")
+      if (!event.once) this.on(event.name, fun.bind(null, { client: this, gadget: this.gadget }))
+      else this.once(event.name, fun.bind(null, { client: this, gadget: this.gadget }))
+
+      if (callback) callback(event, file)
+      
+    })
   }
   private async _setCooldown(
     name: string,
