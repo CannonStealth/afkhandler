@@ -46,7 +46,7 @@ export default class AFKHandler<T = unknown>
     this.gadget = options.gadget as T;
   }
 
-  private async _loader<T>(dir: string, callback?: (file: T) => unknown) {
+  private async _loader<T>(dir: string, callback?: (file: T, fileName: string) => unknown) {
     const files = await readdir(join(process.cwd(), dir));
     for (const file of files) {
       const stat = await lstat(join(process.cwd(), dir, file));
@@ -60,8 +60,7 @@ export default class AFKHandler<T = unknown>
 
       const imported = (await import(join(process.cwd(), dir, file))).default;
 
-      console.log(file);
-      if (callback) callback!(imported);
+      if (callback) callback(imported, file);
     }
   }
 
