@@ -47,10 +47,10 @@ export default class AFKHandler<T = unknown>
   }
 
   private async _loader<T>(dir: string, callback?: (file: T) => unknown) {
-    const files = await readdir(join(process.cwd, dir));
+    const files = await readdir(join(process.cwd(), dir));
     for (const file of files) {
-      const stat = await lstat(join(process.cwd, dir, file));
-      if (stat.isDirectory()) this._loader(join(process.cwd, dir));
+      const stat = await lstat(join(process.cwd(), dir, file));
+      if (stat.isDirectory()) this._loader(join(process.cwd(), dir));
       else if (
         !file.endsWith(".js") &&
         !file.endsWith(".coffee") &&
@@ -58,7 +58,7 @@ export default class AFKHandler<T = unknown>
       )
         continue;
 
-      const imported = (await import(join(process.cwd, dir, file))).default;
+      const imported = (await import(join(process.cwd(), dir, file))).default;
 
       console.log(file);
       if (callback) callback!(imported);
