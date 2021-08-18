@@ -9,7 +9,7 @@ import { DJSSend, CommandInterface as Command, AFKHandlerOptions, CommandsOption
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
-import { SlashCommand } from "./Command";
+import { SlashCommand } from "./FeaturesClasses";
 
 const format = (text: string) =>
   eval(
