@@ -1,13 +1,13 @@
-import { Client as DJSClient, Collection, Snowflake } from "discord.js";
+import { Client as DJSClient, Collection as Map, Snowflake } from "discord.js";
 import { CommandInterface as Command, AFKHandlerOptions, CommandsOptions, SlashCommandInterface, EventInterface as Event, FeatureInterface } from "../types";
 export default class AFKHandler<T = unknown> extends DJSClient implements AFKHandler {
     gadget: T;
-    commands: Collection<string, Command>;
-    aliases: Collection<string, string>;
-    categories: Collection<string, string[]>;
+    commands: Map<string, Command>;
+    aliases: Map<string, string>;
+    categories: Map<string, string[]>;
     developers?: Snowflake[];
-    cooldowns: Collection<string, number>;
-    slashCommands: Collection<string, SlashCommandInterface>;
+    cooldowns: Map<string, number>;
+    slashCommands: Map<string, SlashCommandInterface>;
     constructor(options: AFKHandlerOptions<T>);
     private _loader;
     /**
@@ -39,4 +39,6 @@ export default class AFKHandler<T = unknown> extends DJSClient implements AFKHan
      * @example client.date("5h 2m") // 18120000
      */
     date(text: string): number | never;
+    convert(number: number, decimals?: number): string;
+    private _convertLong;
 }

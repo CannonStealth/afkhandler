@@ -1,4 +1,4 @@
-import { ClientOptions as DJSClientOptions, Message, Collection, Snowflake, MessagePayload, MessageOptions, CommandInteraction, Guild, GuildMember, User, ApplicationCommandOptionData, ApplicationCommandType, InteractionReplyOptions, ClientEvents, Awaited as DJSAwaited } from "discord.js";
+import { ClientOptions as DJSClientOptions, Message, Collection as Map, Snowflake, MessagePayload, MessageOptions, CommandInteraction, Guild, GuildMember, User, ApplicationCommandOptionData, ApplicationCommandType, InteractionReplyOptions, ClientEvents, Awaited as DJSAwaited } from "discord.js";
 import AFKHandler from "./classes/Client";
 declare type RenameKeyHelper<T, S extends string> = `${string & keyof T}${S}`;
 export declare type RenameKey<T, S extends string, V> = {
@@ -16,25 +16,24 @@ export interface AFKHandlerOptions<T = unknown> {
 }
 export interface AFKHandlerInterface<T = unknown> {
     gadget: AFKHandler<T>["gadget"];
-    commands: Collection<string, CommandInterface>;
-    aliases: Collection<string, string>;
-    categories: Collection<string, string[]>;
+    commands: Map<string, CommandInterface>;
+    aliases: Map<string, string>;
+    categories: Map<string, string[]>;
     developers?: Snowflake[];
-    cooldowns: Collection<string, number>;
-    slashCommands: Collection<string, SlashCommandInterface>;
+    cooldowns: Map<string, number>;
+    slashCommands: Map<string, SlashCommandInterface>;
 }
 export declare type Callback<T = unknown> = (destructureThis: {
     client: AFKHandler<T>;
     args: string[];
     message: Message;
-}, gadget: AFKHandler["gadget"]) => unknown;
+}, gadget: AFKHandler["gadget"]) => Awaited<unknown>;
 interface CommandReturns {
     guilds: Arrayed<Snowflake>;
     nsfw: boolean;
     dev: boolean;
     permissions: Arrayed<Permissions>;
     locked: boolean;
-    cooldown: string | number;
     args: {
         max?: number;
         min?: number;
@@ -55,17 +54,18 @@ export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
     fire?: this["callback"];
     emit?: this["callback"];
     hidden?: boolean | null;
+    cooldown?: string | number;
+    cooldownMsg?: (remaining: string) => Awaited<SlashSend>;
 }
 interface SlashCommandReturns {
     guilds: Arrayed<Snowflake>;
-    cooldown: string | number;
 }
 declare type SlashCommandReturnedMessage = Partial<RenameKey<SlashCommandReturns, "Msg", SlashSend>>;
 export interface SlashCommandInterface<T = unknown> extends SlashCommandReturnedMessage {
     name: string;
     description: string;
     help?: CommandHelp;
-    callback?: SlashRun<T>;
+    callback?: SlashCallback<T>;
     run?: this["callback"];
     execute?: this["callback"];
     fire?: this["callback"];
@@ -74,13 +74,15 @@ export interface SlashCommandInterface<T = unknown> extends SlashCommandReturned
     options?: Array<ApplicationCommandOptionData>;
     stop?: boolean;
     type?: ApplicationCommandType;
+    cooldown?: string | number;
+    cooldownMsg?: (remaining: string) => Awaited<SlashSend>;
 }
 export interface CommandsOptions {
     category?: string;
     callback?: (file: CommandInterface, fileName: string) => unknown;
     prefix: string;
 }
-export declare type SlashRun<T = unknown> = (destructureThis: {
+export declare type SlashCallback<T = unknown> = (destructureThis: {
     client: AFKHandler<T>;
     interaction: CommandInteraction;
     member: GuildMember;

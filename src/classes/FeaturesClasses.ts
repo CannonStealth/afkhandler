@@ -13,7 +13,7 @@ export class Command<T = unknown> implements Cmd<T> {
   public readonly devMsg?: Cmd["devMsg"];
   public readonly permissions?: Cmd["permissions"];
   public readonly permissionsMsg?: Cmd["permissionsMsg"];
-  public readonly guilds: Cmd["guilds"];
+  public readonly guilds?: Cmd["guilds"];
   public readonly guildsMsg?: Cmd["guildsMsg"];
   public readonly locked?: Cmd["locked"];
   public readonly lockedMsg?: Cmd["lockedMsg"];

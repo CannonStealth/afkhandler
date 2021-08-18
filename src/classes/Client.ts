@@ -1,6 +1,6 @@
 import {
   Client as DJSClient,
-  Collection,
+  Collection as Map,
   Guild,
   GuildMember,
   Snowflake,
@@ -12,8 +12,8 @@ import {
   AFKHandlerOptions,
   CommandsOptions,
   SlashCommandInterface,
-  EventInterface as Event,
-  FeatureInterface
+  EventInterface,
+  FeatureInterface,
 } from "../types";
 import repl from "repl";
 import { join } from "path";
@@ -25,28 +25,31 @@ export default class AFKHandler<T = unknown>
   implements AFKHandler
 {
   public gadget: T;
-  public commands: Collection<string, Command>;
-  public aliases: Collection<string, string>;
-  public categories: Collection<string, string[]>;
+  public commands: Map<string, Command>;
+  public aliases: Map<string, string>;
+  public categories: Map<string, string[]>;
   public developers?: Snowflake[];
-  public cooldowns: Collection<string, number>;
-  public slashCommands: Collection<string, SlashCommandInterface>;
+  public cooldowns: Map<string, number>;
+  public slashCommands: Map<string, SlashCommandInterface>;
 
   constructor(options: AFKHandlerOptions<T>) {
     super(options?.client);
 
-    this.commands = new Collection();
-    this.aliases = new Collection();
-    this.categories = new Collection();
+    this.commands = new Map();
+    this.aliases = new Map();
+    this.categories = new Map();
     this.developers = options.developers ? [...options.developers] : undefined;
-    this.cooldowns = new Collection();
-    this.slashCommands = new Collection();
+    this.cooldowns = new Map();
+    this.slashCommands = new Map();
 
     if (options.eval) repl.start().context.client = this;
     this.gadget = options.gadget as T;
   }
 
-  private async _loader<T>(dir: string, callback?: (file: T, fileName: string) => unknown) {
+  private async _loader<T>(
+    dir: string,
+    callback?: (file: T, fileName: string) => unknown
+  ) {
     const files = await readdir(join(process.cwd(), dir));
     for (const file of files) {
       const stat = await lstat(join(process.cwd(), dir, file));
@@ -67,12 +70,13 @@ export default class AFKHandler<T = unknown>
   /**
    *
    * @param dir your directory
-   * @example client.Commands("./commands", { 
-   * prefix: "!",
-   * category: "Misc",
-   * callback(command) {
-   *  console.log("Loading command " + command.name))
-   * }
+   * @example client.Commands("./commands", {
+  prefix: "!",
+  category: "Misc",
+  callback(command) {
+  console.log("Loading command " + command.name)
+  }
+})
    */
 
   public async Commands(
@@ -147,11 +151,13 @@ export default class AFKHandler<T = unknown>
           cmd.name + message.guild!.id + message.author.id
         );
         if (cooldown && cooldown > Date.now()) {
-          if (cmd.cooldownMsg) message.channel.send(cmd.cooldownMsg);
+          const remaining = this.convert(cooldown);
+
+          if (cmd.cooldownMsg)
+            message.channel.send(await cmd.cooldownMsg(remaining));
           return;
         }
       }
-
 
       let botPermissions = cmd.botPermissions;
 
@@ -171,8 +177,6 @@ export default class AFKHandler<T = unknown>
           return;
         }
       }
-
-      
 
       let permissions = cmd.permissions;
 
@@ -230,7 +234,9 @@ export default class AFKHandler<T = unknown>
     this._loader<Command>(dir, (command, file) => {
       if (!command.name)
         throw new Error(
-          "AFKHandler commands " + file + " ERROR: You didn't put any name on a command"
+          "AFKHandler commands " +
+            file +
+            " ERROR: You didn't put any name on a command"
         );
 
       if (
@@ -241,7 +247,9 @@ export default class AFKHandler<T = unknown>
         !command.fire
       )
         throw new Error(
-          "AFKHandler commands " + file + " ERROR: You didn't put any run function on a command"
+          "AFKHandler commands " +
+            file +
+            " ERROR: You didn't put any run function on a command"
         );
 
       if (
@@ -263,8 +271,8 @@ export default class AFKHandler<T = unknown>
         command.help?.category || options?.category
       )?.toLowerCase();
       if (!category) {
-         if (options?.callback) options.callback(command, file);
-         return;
+        if (options?.callback) options.callback(command, file);
+        return;
       }
 
       let categoryGetter = this.categories.get(category);
@@ -280,15 +288,18 @@ export default class AFKHandler<T = unknown>
   }
 
   /**
-   * 
+   *
    * @param dir your directory
    * @param callback function executed when a command is loaded
-   * @example client.SlashCommand("./slash-commands", 
+   * @example client.SlashCommands("./slash-commands",
    * (cmd) => console.log("Loading slash command " + cmd.name))
    */
   public async SlashCommands(
     dir: string,
-    callback?: (slashCommand: SlashCommandInterface, fileName: string) => unknown
+    callback?: (
+      slashCommand: SlashCommandInterface,
+      fileName: string
+    ) => unknown
   ) {
     const application = this.application;
     if (!application)
@@ -316,7 +327,9 @@ export default class AFKHandler<T = unknown>
 
           if (cooldown) {
             if (Date.now() < cooldown) {
-              if (cmd.cooldownMsg) interaction.reply(cmd.cooldownMsg);
+              const remaining = this.convert(cooldown);
+              if (cmd.cooldownMsg)
+                interaction.reply(await cmd.cooldownMsg(remaining));
               return;
             }
           }
@@ -359,95 +372,140 @@ export default class AFKHandler<T = unknown>
       return;
     });
 
-    this._loader<SlashCommandInterface>(dir, (file: SlashCommandInterface, fileName) => {
+    this._loader<SlashCommandInterface>(
+      dir,
+      (file: SlashCommandInterface, fileName) => {
+        if (!file.name)
+          throw new Error(
+            "AFKHandler commands " +
+              fileName +
+              " ERROR: You didn't put any name in the command"
+          );
 
-      if (!file.name)
-        throw new Error(
-          "AFKHandler commands " + fileName + " ERROR: You didn't put any name on a command"
-        );
+        if (!file.description)
+          throw new Error(
+            "AFKHandler commands " +
+              fileName +
+              " ERROR: You didn't put any description property in the command"
+          );
 
-      if (
-        !file.callback &&
-        !file.run &&
-        !file.emit &&
-        !file.execute &&
-        !file.fire
-      )
-        throw new Error(
-          "AFKHandler commands " + fileName + " ERROR: You didn't put any run function on a command"
-        );
+        if (
+          !file.callback &&
+          !file.run &&
+          !file.emit &&
+          !file.execute &&
+          !file.fire
+        )
+          throw new Error(
+            "AFKHandler commands " +
+              fileName +
+              " ERROR: You didn't put any run function on a command"
+          );
 
-      if (
-        file.cooldown &&
-        typeof file.cooldown === "string" &&
-        !/^(\d+[mhsd]\s?)+$/gi.test(file.cooldown)
-      )
-        throw new Error(
-          "AFKHandler commands " + fileName + " ERROR: Invalid time to convert"
-        );
+        if (
+          file.cooldown &&
+          typeof file.cooldown === "string" &&
+          !/^(\d+[mhsd]\s?)+$/gi.test(file.cooldown)
+        )
+          throw new Error(
+            "AFKHandler commands " +
+              fileName +
+              " ERROR: Invalid time to convert"
+          );
 
+        this.slashCommands.set(file.name, file);
+        if (!file.stop) {
+          const toSend = {
+            name: file.name,
+            description: file.description,
+            defaultPermission: file.default,
+            options: file.options,
+          };
 
-      this.slashCommands.set(file.name, file);
-      if (!file.stop) {
-        const toSend = {
-          name: file.name,
-          description: file.description,
-          defaultPermission: file.default,
-          options: file.options,
-        };
-
-        if (file.guilds && file.guilds.length) {
-          for (const guild of file.guilds) {
+          if (file.guilds && file.guilds.length) {
+            for (const guild of file.guilds) {
+              application.commands
+                .create(toSend, guild)
+                .then(() => (callback ? callback(file, fileName) : undefined))
+                .catch((e: string) => {
+                  console.log(
+                    "AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING"
+                  );
+                  throw new Error(e);
+                });
+            }
+          } else {
             application.commands
-              .create(toSend, guild)
-              .then(() => (callback ? callback(file, fileName) : undefined))
-              .catch((e: string) => {
-                console.log(
-                  "AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING"
-                );
-                throw new Error(e);
-              });
+              .create(toSend)
+              .then(() => (callback ? callback(file, fileName) : undefined));
           }
-        } else {
-          application.commands
-            .create(toSend)
-            .then(() => (callback ? callback(file, fileName) : undefined)); // creating the slash command
         }
       }
+    );
+
+    return this;
+  }
+
+  public Events(
+    dir: string,
+    callback?: (event: EventInterface, file: string) => unknown
+  ) {
+    this._loader<EventInterface>(dir, (event, file) => {
+      if (!event.name)
+        throw new Error(
+          "AFKHandler events " + file + " ERROR: there's no event name"
+        );
+      const fun =
+        event.callback ||
+        event.run ||
+        event.execute ||
+        event.fire ||
+        event.emit;
+
+      if (!fun)
+        throw new Error(
+          "AFKHandler events " + file + " ERROR: there's no run function"
+        );
+      if (!event.once)
+        this.on(
+          event.name,
+          fun.bind(null, { client: this, gadget: this.gadget })
+        );
+      else
+        this.once(
+          event.name,
+          fun.bind(null, { client: this, gadget: this.gadget })
+        );
+
+      if (callback) callback(event, file);
     });
 
     return this;
   }
 
-  public Events(dir: string, callback?: (event: Event, file: string) => unknown) {
-    this._loader<Event>(dir, (event, file) => {
+  public Features(
+    dir: string,
+    callback: (feature: FeatureInterface, file: string) => unknown
+  ) {
+    this._loader<FeatureInterface>(dir, (feature, file) => {
+      const run =
+        feature.run ||
+        feature.execute ||
+        feature.callback ||
+        feature.emit ||
+        feature.fire;
 
-      if (!event.name) throw new Error("AFKHandler events " + file + " ERROR: there's no event name")
-      const fun = event.callback || event.run || event.execute || event.fire || event.emit
+      if (!run)
+        throw new Error(
+          "AFKHandler features " + file + " ERROR: there's no run function"
+        );
 
-      if (!fun) throw new Error("AFKHandler events " + file + " ERROR: there's no run function")
-      if (!event.once) this.on(event.name, fun.bind(null, { client: this, gadget: this.gadget }))
-      else this.once(event.name, fun.bind(null, { client: this, gadget: this.gadget }))
-
-      if (callback) callback(event, file)
-      
-    })
+      run({ client: this, gadget: this.gadget });
+      if (callback) callback(feature, file);
+    });
 
     return this;
   }
-
-  public Features(dir: string, callback: (feature: FeatureInterface, file: string) => unknown) {
-    this._loader<FeatureInterface>(dir, (feature, file) => {
-      const run = feature.run || feature.execute || feature.callback || feature.emit || feature.fire
-
-      if (!run) throw new Error("AFKHandler features " + file + " ERROR: there's no run function")
-
-      run({ client: this, gadget: this.gadget })
-      if (callback) callback(feature, file)
-    })
-
-    return this;
-  } 
   private async _setCooldown(
     name: string,
     guild: Guild,
@@ -484,4 +542,117 @@ export default class AFKHandler<T = unknown>
           throw new Error("AFKHandler date ERROR: Invalid time to convert");
         })();
   }
+
+  public convert(number: number, decimals: number = 0) {
+    let totalSeconds = number / 1000;
+    let days = Math.floor(totalSeconds / 86400).toFixed() || 0;
+
+    totalSeconds %= 86400;
+    let hours = Math.floor(totalSeconds / 3600).toFixed() || 0;
+
+    totalSeconds %= 3600;
+    let minutes = Math.floor(totalSeconds / 60).toFixed() || 0;
+    let seconds = totalSeconds % 60 || 0;
+    seconds = +seconds.toFixed(decimals);
+
+    return this._convertLong(
+      [days, hours, minutes, seconds].map((t) => t.toString())
+    );
+  }
+
+  private _convertLong(converted: string[]) {
+    {
+      let days: number | string = converted[0];
+      let hours: number | string = converted[1];
+      let minutes: number | string = converted[2];
+      let seconds: number | string = converted[3];
+
+      let dias: string = "days";
+      let horas: string = "hours";
+      let minutos: string = "minutes";
+      let segundos: string = "seconds";
+
+      if (+days <= 0) {
+        days = "";
+        dias = "";
+      }
+
+      if (+days === 1) dias = dias.replace("s", "");
+
+      if (+hours <= 0) {
+        hours = "";
+        horas = "";
+      }
+
+      if (+hours === 1) horas = "hour";
+
+      if (+minutes <= 0) {
+        minutes = "";
+        minutos = "";
+      }
+      if (+minutes === 1) minutos = "minute";
+
+      if (+seconds <= 0) {
+        seconds = "";
+        segundos = "";
+      }
+      if (+seconds === 1) segundos = "second";
+
+      return [days, dias, hours, horas, minutes, minutos, seconds, segundos]
+        .join(" ")
+        .split(/[ ]+/)
+        .join(" ");
+    }
+  }
 }
+
+const client = new AFKHandler({
+  client: {
+    // discord.js ClientOptions
+    intents: 32767,
+  },
+  developers: ["123456788910"], // developers
+  eval: true, // eval on terminal
+  gadget: "Test",
+  // property that you can use in an event or command or feature
+});
+
+client.on("ready", () => {
+  client.Commands("./commands", {
+    // commands folder
+    prefix: "!", // prefix
+    category: "Misc", // default category
+    callback(command, file) {
+      // function executed when a command is loaded
+      console.log("Loading command " + command.name);
+    },
+  });
+
+  client.SlashCommands(
+    "./slash-commands",
+    (
+      cmd,
+      file // slash folder
+    ) => console.log("Loading slash command " + cmd.name)
+    // function executed when a slash command is published
+  );
+
+  client.Events(
+    "./events",
+    (
+      event,
+      file // events folder
+    ) => console.log(`Loading event ${event.name}`)
+    // function executed when an event is loaded
+  );
+  client.Features(
+    "./features",
+    (
+      feature,
+      file // features folder
+    ) => console.log(`Loading feature from ${file}`)
+    // function executed when a feature is loaded
+  );
+});
+
+client.login("token");

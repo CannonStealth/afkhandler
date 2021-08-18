@@ -11,7 +11,7 @@ export declare class Command<T = unknown> implements Cmd<T> {
     readonly devMsg?: Cmd["devMsg"];
     readonly permissions?: Cmd["permissions"];
     readonly permissionsMsg?: Cmd["permissionsMsg"];
-    readonly guilds: Cmd["guilds"];
+    readonly guilds?: Cmd["guilds"];
     readonly guildsMsg?: Cmd["guildsMsg"];
     readonly locked?: Cmd["locked"];
     readonly lockedMsg?: Cmd["lockedMsg"];

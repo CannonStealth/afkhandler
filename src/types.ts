@@ -1,7 +1,7 @@
 import {
   ClientOptions as DJSClientOptions,
   Message,
-  Collection,
+  Collection as Map,
   Snowflake,
   MessagePayload,
   MessageOptions,
@@ -38,12 +38,12 @@ export interface AFKHandlerOptions<T = unknown> {
 
 export interface AFKHandlerInterface<T = unknown> {
   gadget: AFKHandler<T>["gadget"];
-  commands: Collection<string, CommandInterface>;
-  aliases: Collection<string, string>;
-  categories: Collection<string, string[]>;
+  commands: Map<string, CommandInterface>;
+  aliases: Map<string, string>;
+  categories: Map<string, string[]>;
   developers?: Snowflake[];
-  cooldowns: Collection<string, number>;
-  slashCommands: Collection<string, SlashCommandInterface>;
+  cooldowns: Map<string, number>;
+  slashCommands: Map<string, SlashCommandInterface>;
 }
 
 export type Callback<T = unknown> = (
@@ -53,7 +53,7 @@ export type Callback<T = unknown> = (
     message: Message;
   },
   gadget: AFKHandler["gadget"]
-) => unknown;
+) => Awaited<unknown>;
 
 interface CommandReturns {
   guilds: Arrayed<Snowflake>;
@@ -61,7 +61,6 @@ interface CommandReturns {
   dev: boolean;
   permissions: Arrayed<Permissions>;
   locked: boolean;
-  cooldown: string | number;
   args: {
     max?: number;
     min?: number;
@@ -92,11 +91,13 @@ export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
   fire?: this["callback"];
   emit?: this["callback"];
   hidden?: boolean | null;
+  cooldown?: string | number;
+  cooldownMsg?: (remaining: string) => Awaited<SlashSend>;
 }
+
 
 interface SlashCommandReturns {
   guilds: Arrayed<Snowflake>;
-  cooldown: string | number;
 }
 
 type SlashCommandReturnedMessage = Partial<
@@ -108,7 +109,7 @@ export interface SlashCommandInterface<T = unknown>
   name: string;
   description: string;
   help?: CommandHelp;
-  callback?: SlashRun<T>;
+  callback?: SlashCallback<T>;
   run?: this["callback"];
   execute?: this["callback"];
   fire?: this["callback"];
@@ -117,6 +118,8 @@ export interface SlashCommandInterface<T = unknown>
   options?: Array<ApplicationCommandOptionData>;
   stop?: boolean;
   type?: ApplicationCommandType;
+  cooldown?: string | number;
+  cooldownMsg?: (remaining: string) => Awaited<SlashSend>;
 }
 
 export interface CommandsOptions {
@@ -125,7 +128,7 @@ export interface CommandsOptions {
   prefix: string;
 }
 
-export type SlashRun<T = unknown> = (
+export type SlashCallback<T = unknown> = (
   destructureThis: {
     client: AFKHandler<T>;
     interaction: CommandInteraction;
