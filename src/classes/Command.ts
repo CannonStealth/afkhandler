@@ -15,6 +15,8 @@ export default class Command implements Cmd {
     public readonly guildsMsg?: Cmd["guildsMsg"]
     public readonly locked?: Cmd["locked"]
     public readonly lockedMsg?: Cmd["lockedMsg"]
+    public readonly cooldown?: Cmd["cooldown"]
+    public readonly cooldownMsg?: Cmd["cooldownMsg"]
 
     constructor(options: AFKHandlerTypes.Command) {
     this.name = options.name
@@ -29,5 +31,7 @@ export default class Command implements Cmd {
     this.guildsMsg = options.guildsMsg
     this.locked = options.locked
     this.lockedMsg = options.lockedMsg
+    this.cooldown = options.cooldown
+    this.cooldownMsg = options.cooldownMsg
     }
 }

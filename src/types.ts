@@ -23,6 +23,7 @@ export namespace AFKHandlerTypes {
     aliases: Collection<string, string>;
     categories: Collection<string, string[]>;
     developers?: Snowflake[];
+    cooldowns: Collection<string, number>
   }
 
   export type Callback<T = unknown> = (
@@ -40,6 +41,7 @@ export namespace AFKHandlerTypes {
     dev: boolean;
     permissions: Arrayed<Permissions>;
     locked: boolean
+    cooldown: string | number
   }
 
   type CommandReturnsMsg = `${keyof CommandReturns}Msg`;
@@ -67,7 +69,6 @@ export namespace AFKHandlerTypes {
     prefix: string;
   }
 }
-
 
 type Permissions = 
 | "CREATE_INSTANT_INVITE"
