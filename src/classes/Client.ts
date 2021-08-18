@@ -20,17 +20,6 @@ import { join } from "path";
 import { readdir, lstat } from "fs/promises";
 import { SlashCommand } from "./FeaturesClasses";
 
-const format = (text: string) =>
-  eval(
-    "( " +
-      text
-        .replace("m", " * 60 + ")
-        .replace("h", " * 60 * 60 + ")
-        .replace("d", " * 24 * 60 * 60 + ")
-        .replace("s", " + 0 + ") +
-      "0 ) * 1000"
-  );
-
 export default class AFKHandler<T = unknown>
   extends DJSClient
   implements AFKHandler
