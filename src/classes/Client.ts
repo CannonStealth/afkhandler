@@ -5,7 +5,7 @@ import {
   Snowflake,
   TextChannel,
 } from "discord.js";
-import { AFKHandlerTypes, DJSSend } from "../types";
+import { DJSSend, CommandInterface as Command, AFKHandlerOptions, CommandsOptions } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
@@ -23,16 +23,16 @@ const format = (text: string) =>
 
 export default class AFKHandler<T = unknown>
   extends DJSClient
-  implements AFKHandlerTypes.AFKHandler
+  implements AFKHandler
 {
   public gadget: T;
-  public commands: Collection<string, AFKHandlerTypes.Command>;
+  public commands: Collection<string, Command>;
   public aliases: Collection<string, string>;
   public categories: Collection<string, string[]>;
   public developers?: Snowflake[];
   public cooldowns: Collection<string, number>;
 
-  constructor(options: AFKHandlerTypes.AFKHandlerOptions) {
+  constructor(options: AFKHandlerOptions) {
     super(options.client);
 
     this.commands = new Collection();
@@ -73,7 +73,7 @@ export default class AFKHandler<T = unknown>
 
   public async Commands(
     dir: string,
-    options: AFKHandlerTypes.CommandsOptions
+    options: CommandsOptions
   ): Promise<this | never> {
     if (!dir)
       throw new Error(
@@ -215,7 +215,7 @@ export default class AFKHandler<T = unknown>
       }
     });
 
-    this._loader<AFKHandlerTypes.Command>(dir, (command) => {
+    this._loader<Command>(dir, (command) => {
       if (!command.name)
         throw new Error(
           "AFKHandler commands file ERROR: You didn't put any name on a command"

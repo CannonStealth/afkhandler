@@ -7,9 +7,15 @@ import {
   MessageOptions,
 } from "discord.js";
 
+type RenameKeyHelper<T, S extends string> = `${string & keyof T}${S}`;
+export type RenameKey<T, S extends string, V> = {
+  [Property in string & RenameKeyHelper<T, S>]: V;
+} &
+  T;
+
 export type Arrayed<T> = T | T[];
 export type DJSSend = string | MessagePayload | MessageOptions;
-export namespace AFKHandlerTypes {
+
   export interface AFKHandlerOptions {
     client: DJSClientOptions;
     eval?: boolean;
@@ -19,7 +25,7 @@ export namespace AFKHandlerTypes {
 
   export interface AFKHandler<T = unknown> {
     gadget: T;
-    commands: Collection<string, Command>;
+    commands: Collection<string, CommandInterface>;
     aliases: Collection<string, string>;
     categories: Collection<string, string[]>;
     developers?: Snowflake[];
@@ -49,19 +55,15 @@ export namespace AFKHandlerTypes {
     botPermissions: Arrayed<Permissions>
   }
 
-  type CommandReturnsMsg = `${keyof CommandReturns}Msg`;
 
-  type CommandReturnedMessage = {
-    [Property in CommandReturnsMsg]?: DJSSend;
-  } &
-    Partial<CommandReturns>;
+  type CommandReturnedMessage = Partial<RenameKey<CommandReturns, "Msg", DJSSend>>
 
     type CommandHelp = {
       [Property in "description" | "usage" | "example" | "note" | "category"]?: string
     }
 
 
-  export interface Command<T = unknown> extends CommandReturnedMessage {
+  export interface CommandInterface<T = unknown> extends CommandReturnedMessage {
     name: string;
     aliases?: string[];
     help?: CommandHelp;
@@ -75,10 +77,10 @@ export namespace AFKHandlerTypes {
 
   export interface CommandsOptions {
     category?: string;
-    callback?: (file: Command) => unknown;
+    callback?: (file: CommandInterface) => unknown;
     prefix: string;
   }
-}
+
 
 type Permissions = 
 | "CREATE_INSTANT_INVITE"

@@ -1,8 +1,5 @@
 import { Collection } from "discord.js";
-import { AFKHandlerTypes } from "../types";
-
-type Cmd = AFKHandlerTypes.Command;
-
+import { CommandInterface as Cmd } from "../types";
 
 export default class Command implements Cmd {
   public readonly name: Cmd["name"];
@@ -25,7 +22,7 @@ export default class Command implements Cmd {
   public readonly botPermissionsMsg?: Cmd["botPermissionsMsg"]
   public readonly hidden?: Cmd["hidden"]
 
-  constructor(options: AFKHandlerTypes.Command) {
+  constructor(options: Cmd) {
     this.name = options.name;
     this.aliases = options.aliases;
     this.callback = options.run || options.callback || options.fire || options.execute || options.emit;
