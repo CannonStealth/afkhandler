@@ -1,1 +1,2 @@
-<h1>READ OUR [DOCUMENTATION](https://away-from-keyboard.gitbook.io/afkhandler/)<h1>
+<h1>READ OUR DOCUMENTATION<h1>
+[Documentation](https://away-from-keyboard.gitbook.io/afkhandler/)
