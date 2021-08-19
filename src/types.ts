@@ -122,12 +122,6 @@ export interface SlashCommandInterface<T = unknown>
   cooldownMsg?: (remaining: string) => Awaited<SlashSend>;
 }
 
-export interface CommandsOptions {
-  category?: string;
-  callback?: (file: CommandInterface, fileName: string) => unknown;
-  prefix: string;
-}
-
 export type SlashCallback<T = unknown> = (
   destructureThis: {
     client: AFKHandler<T>;

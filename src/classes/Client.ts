@@ -7,19 +7,21 @@ import {
   Snowflake,
   TextChannel,
   User,
+  ApplicationCommand,
+  GuildResolvable,
+  Client
 } from "discord.js";
 import {
   CommandInterface as Command,
   AFKHandlerOptions,
-  CommandsOptions,
   SlashCommandInterface,
   EventInterface,
   FeatureInterface,
+  Awaited
 } from "../types";
 import repl from "repl";
 import { join } from "path";
 import { readdir, lstat } from "fs/promises";
-import { callbackify } from "util";
 
 export default class AFKHandler<T = unknown>
   extends DJSClient
@@ -34,7 +36,7 @@ export default class AFKHandler<T = unknown>
   public slashCommands: Map<string, SlashCommandInterface>;
 
   constructor(options: AFKHandlerOptions<T>) {
-    super(options?.client);
+    super(options?.client)
 
     this.commands = new Map();
     this.aliases = new Map();
@@ -47,14 +49,14 @@ export default class AFKHandler<T = unknown>
     this.gadget = options.gadget as T;
   }
 
-  private async _loader<T>(
+  public async load<T>(
     dir: string,
-    callback?: (file: T, fileName: string) => unknown
+    callback?: (file: T, fileName: string) => Awaited<unknown>
   ) {
     const files = await readdir(join(process.cwd(), dir));
     for (const file of files) {
       const stat = await lstat(join(process.cwd(), dir, file));
-      if (stat.isDirectory()) this._loader(join(process.cwd(), dir));
+      if (stat.isDirectory()) this.load(join(process.cwd(), dir));
       else if (
         !file.endsWith(".js") &&
         !file.endsWith(".coffee") &&
@@ -82,8 +84,12 @@ export default class AFKHandler<T = unknown>
 
   public async Commands(
     dir: string,
-    options: CommandsOptions
-  ): Promise<this | never> {
+    options: {
+      category?: string;
+      callback?: (file: Command, fileName: string) => Awaited<unknown>;
+      prefix: string;
+    }
+  ): Promise<this> {
     if (!dir)
       throw new Error(
         "AFKHandler commands method ERROR: You forgot to specify the directory path in the first parameter"
@@ -98,24 +104,24 @@ export default class AFKHandler<T = unknown>
       if (message.author.bot || message.channel.type === "DM") return;
 
       const { prefix } = options;
-      if (!message.content.startsWith(prefix)) return;
+      if (!message.content.toLowerCase().startsWith(prefix.toLowerCase())) return;
 
       const args = message.content.slice(prefix.length).trim().split(/ +/g);
 
-      const cmdName = args.shift();
+      const cmdName = args.shift()?.toLowerCase();
 
       if (!cmdName) return;
 
       if (
-        !message.content.startsWith(
-          `${prefix.toLowerCase()}${cmdName.toLowerCase()}`
+        !message.content.toLowerCase().startsWith(
+          `${prefix}${cmdName}`
         )
       )
         return;
 
       const cmd =
-        this.commands.get(cmdName.toLowerCase()) ||
-        this.commands.get(this.aliases.get(cmdName.toLowerCase())!);
+        this.commands.get(cmdName) ||
+        this.commands.get(this.aliases.get(cmdName)!);
 
       if (!cmd) return;
 
@@ -132,7 +138,7 @@ export default class AFKHandler<T = unknown>
       if (
         cmd.nsfw &&
         message.channel instanceof TextChannel &&
-        message.channel.nsfw
+        !message.channel.nsfw
       ) {
         if (cmd.nsfwMsg) message.channel.send(cmd.nsfwMsg);
         return;
@@ -152,7 +158,7 @@ export default class AFKHandler<T = unknown>
           cmd.name + message.guild!.id + message.author.id
         );
         if (cooldown && cooldown > Date.now()) {
-          const remaining = this.convert(cooldown);
+          const remaining = this.convert(cooldown - Date.now());
 
           if (cmd.cooldownMsg)
             message.channel.send(await cmd.cooldownMsg(remaining));
@@ -169,8 +175,8 @@ export default class AFKHandler<T = unknown>
         const channel = message.channel as TextChannel;
 
         if (
-          botPermissions.every(
-            (p) => !channel.permissionsFor(message.member!).has(p)
+          botPermissions.some(
+            (p) => !channel.permissionsFor(message.guild!.me!)!.has(p)
           )
         ) {
           if (cmd.botPermissionsMsg)
@@ -187,7 +193,7 @@ export default class AFKHandler<T = unknown>
         const channel = message.channel as TextChannel;
         if (
           !permissions.some(
-            (p) => !channel.permissionsFor(message.member!).has(p)
+            (p) => channel.permissionsFor(message.member!).has(p)
           )
         ) {
           if (cmd.permissionsMsg) message.channel.send(cmd.permissionsMsg);
@@ -223,7 +229,7 @@ export default class AFKHandler<T = unknown>
         result = await cmd.emit({ client: this, args, message }, this.gadget);
 
       if (result === true && cmd.cooldown) {
-        this._setCooldown(
+        this.setCooldown(
           cmd.name,
           message.guild!,
           message.author,
@@ -232,7 +238,7 @@ export default class AFKHandler<T = unknown>
       }
     });
 
-    this._loader<Command>(dir, (command, file) => {
+    this.load<Command>(dir, (command, file) => {
       if (!command.name)
         throw new Error(
           "AFKHandler commands " +
@@ -298,9 +304,11 @@ export default class AFKHandler<T = unknown>
   public async SlashCommands(
     dir: string,
     callback?: (
-      slashCommand: SlashCommandInterface,
+      slashCommand: ApplicationCommand<{
+        guild: GuildResolvable;
+    }> | ApplicationCommand<{}>,
       fileName: string
-    ) => unknown
+    ) => Awaited<unknown>
   ) {
     const application = this.application;
     if (!application)
@@ -328,7 +336,7 @@ export default class AFKHandler<T = unknown>
 
           if (cooldown) {
             if (Date.now() < cooldown) {
-              const remaining = this.convert(cooldown);
+              const remaining = this.convert(cooldown - Date.now());
               if (cmd.cooldownMsg)
                 interaction.reply(await cmd.cooldownMsg(remaining));
               return;
@@ -340,40 +348,41 @@ export default class AFKHandler<T = unknown>
 
         let result;
         if (cmd.callback)
-          result = cmd.callback(
+          result = await cmd.callback(
             { client: this, interaction, member, guild, user },
             this.gadget
           );
         if (cmd.run)
-          result = cmd.run(
+          result = await cmd.run(
             { client: this, interaction, member, guild, user },
             this.gadget
           );
         if (cmd.execute)
-          result = cmd.execute(
+          result = await cmd.execute(
             { client: this, interaction, member, guild, user },
             this.gadget
           );
         if (cmd.fire)
-          result = cmd.fire(
+          result = await cmd.fire(
             { client: this, interaction, member, guild, user },
             this.gadget
           );
         if (cmd.emit)
-          result = cmd.emit(
+          result = await cmd.emit(
             { client: this, interaction, member, guild, user },
             this.gadget
           );
 
         if (result === true && cmd.cooldown)
-          this._setCooldown(cmd.name, guild, user, cmd.cooldown);
+          this.setCooldown(cmd.name, guild, user, cmd.cooldown);
         return;
       }
 
       return;
     });
 
-    this._loader<SlashCommandInterface>(
+
+    this.load<SlashCommandInterface>(
       dir,
       (file: SlashCommandInterface, fileName) => {
         if (!file.name)
@@ -427,7 +436,7 @@ export default class AFKHandler<T = unknown>
             for (const guild of file.guilds) {
               application.commands
                 .create(toSend, guild)
-                .then(() => (callback ? callback(file, fileName) : undefined))
+                .then((a) => (callback ? callback(a, fileName) : undefined))
                 .catch((e: string) => {
                   console.log(
                     "AFKHandler warning: THIS ERROR CAN BE CAUSED BY AN INVALID SNOWFLAKE IN GUILDS ARRAY / STRING"
@@ -438,7 +447,7 @@ export default class AFKHandler<T = unknown>
           } else {
             application.commands
               .create(toSend)
-              .then(() => (callback ? callback(file, fileName) : undefined));
+              .then((a) => (callback ? callback(a, fileName) : undefined));
           }
         }
       }
@@ -449,9 +458,9 @@ export default class AFKHandler<T = unknown>
 
   public Events(
     dir: string,
-    callback?: (event: EventInterface<keyof ClientEvents>, file: string) => unknown
+    callback?: (event: EventInterface<keyof ClientEvents>, file: string) => Awaited<unknown>
   ) {
-    this._loader<EventInterface<keyof ClientEvents>>(dir, (event, file) => {
+    this.load<EventInterface<keyof ClientEvents>>(dir, (event, file) => {
       if (!event.name)
         throw new Error(
           "AFKHandler events " + file + " ERROR: there's no event name"
@@ -486,9 +495,9 @@ export default class AFKHandler<T = unknown>
 
   public Features(
     dir: string,
-    callback: (feature: FeatureInterface, file: string) => unknown
+    callback: (feature: FeatureInterface, fileName: string) => Awaited<unknown>
   ) {
-    this._loader<FeatureInterface>(dir, (feature, file) => {
+    this.load<FeatureInterface>(dir, (feature, file) => {
       const run =
         feature.run ||
         feature.execute ||
@@ -507,18 +516,24 @@ export default class AFKHandler<T = unknown>
 
     return this;
   }
-  private async _setCooldown(
+
+  public setCooldown(
     name: string,
     guild: Guild,
-    author: User | GuildMember,
+    user: User | GuildMember,
     timer: string | number
   ) {
     let time;
 
-    if (typeof timer === "string") time = this.date(timer);
+    if (!["string", "number"].includes(typeof timer)) throw new Error("AFKHandler setCooldown error, timer must be a string or a number")
+
+    if (typeof timer === "string") time = this.time(timer);
     else time = timer * 1000;
 
-    this.cooldowns.set(name + guild.id + author.id, Date.now() + time);
+    this.cooldowns.set(name + guild.id + user.id, Date.now() + time);
+
+    return this;
+
   }
 
   /**
@@ -527,7 +542,7 @@ export default class AFKHandler<T = unknown>
    * @returns converted
    * @example client.date("5h 2m") // 18120000
    */
-  public date(text: string): number | never {
+  public time(text: string): number {
     text = text.toLowerCase();
     return /^(\d+[mhsd]\s?)+$/gi.test(text)
       ? eval(
@@ -540,7 +555,7 @@ export default class AFKHandler<T = unknown>
             "0 ) * 1000"
         )
       : (() => {
-          throw new Error("AFKHandler date ERROR: Invalid time to convert");
+          throw new Error("AFKHandler time method ERROR: Invalid time to convert");
         })();
   }
 
@@ -556,12 +571,48 @@ export default class AFKHandler<T = unknown>
     let seconds = totalSeconds % 60 || 0;
     seconds = +seconds.toFixed(decimals);
 
-    return this._convertLong(
-      [days, hours, minutes, seconds].map((t) => t.toString())
+    return this.convertLong(
+      [+days, +hours, +minutes, seconds]
     );
   }
 
-  private _convertLong(converted: string[]) {
+  public async deleteSlash(name: string, guilds?: Snowflake[]) {
+    if (!this.application) throw new Error("AFKHandler deleteSlash method ERROR: Client isn't logged in") 
+
+    if (!guilds || !guilds.length) {
+    const commands = await this.application.commands.fetch()
+
+    const command = commands.find(c => c.name.toLowerCase() === name.toLowerCase())
+
+    if (!command) return
+
+    return command.delete()
+
+    } 
+
+    const arr = []
+
+    for (const guildId of guilds) {
+
+      const guild = await this.guilds.fetch(guildId)
+      .catch(() => { throw new Error("AFKHandler deleteSlash method ERROR: Unknown guild") })
+
+      const commands = await guild.commands.fetch()
+
+      const command = commands.find(c => c.name.toLowerCase() === name.toLowerCase())
+
+      if (!command) return 
+
+       const deleted = await command.delete()
+
+       arr.push(deleted)
+  
+    }
+
+    return arr
+
+  }
+  public convertLong(converted: number[]) {
     {
       let days: number | string = converted[0];
       let hours: number | string = converted[1];
@@ -602,58 +653,7 @@ export default class AFKHandler<T = unknown>
       return [days, dias, hours, horas, minutes, minutos, seconds, segundos]
         .join(" ")
         .split(/[ ]+/)
-        .join(" ");
+        .join(" ").trim();
     }
   }
 }
-
-const client = new AFKHandler({
-  client: {
-    // discord.js ClientOptions
-    intents: 32767,
-  },
-  developers: ["123456788910"], // developers
-  eval: true, // eval on terminal
-  gadget: "Test",
-  // property that you can use in an event or command or feature
-});
-
-client.on("ready", () => {
-  client.Commands("./commands", {
-    // commands folder
-    prefix: "!", // prefix
-    category: "Misc", // default category
-    callback(command, file) {
-      // function executed when a command is loaded
-      console.log("Loading command " + command.name);
-    },
-  });
-
-  client.SlashCommands(
-    "./slash-commands",
-    (
-      cmd,
-      file // slash folder
-    ) => console.log("Loading slash command " + cmd.name)
-    // function executed when a slash command is published
-  );
-
-  client.Events(
-    "./events",
-    (
-      event,
-      file // events folder
-    ) => console.log(`Loading event ${event.name}`)
-    // function executed when an event is loaded
-  );
-  client.Features(
-    "./features",
-    (
-      feature,
-      file // features folder
-    ) => console.log(`Loading feature from ${file}`)
-    // function executed when a feature is loaded
-  );
-});
-
-client.login("token");

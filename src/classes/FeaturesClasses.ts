@@ -26,6 +26,8 @@ export class Command<T = unknown> implements Cmd<T> {
   public readonly botPermissions?: Cmd["botPermissions"]
   public readonly botPermissionsMsg?: Cmd["botPermissionsMsg"]
   public readonly hidden?: Cmd["hidden"]
+  public readonly nsfw?: Cmd["nsfw"]
+  public readonly nsfwMsg?: Cmd["nsfwMsg"]
 
   constructor(options: Cmd<T>) {
     this.name = options.name;
@@ -51,6 +53,8 @@ export class Command<T = unknown> implements Cmd<T> {
     this.botPermissions = options.botPermissions
     this.botPermissionsMsg = options.botPermissionsMsg
     this.hidden = options.hidden
+    this.nsfw = options.nsfw
+    this.nsfwMsg = options.nsfwMsg
   }
 }
 
