@@ -139,20 +139,20 @@ export type SlashCallback<T = unknown> = (
   gadget: AFKHandler<T>["gadget"]
 ) => Awaited<unknown>;
 
-export interface EventInterface<T = unknown> {
-  name: keyof ClientEvents;
+export interface EventInterface<V extends keyof ClientEvents, T = unknown> {
+  name: V;
   once?: boolean;
-  callback?: EventCallback<T>;
+  callback?: EventCallback<V, T>;
   run?: this["callback"];
   fire?: this["callback"];
   execute?: this["callback"];
   emit?: this["callback"];
 }
 
-type EventCallback<T = unknown> = (destructureThis: {
+type EventCallback<V extends keyof ClientEvents, T = unknown> = (destructureThis: {
   client: AFKHandler<T>;
   gadget: AFKHandler<T>["gadget"];
-}) => DJSAwaited<void>;
+}, ...parameters: ClientEvents[V]) => DJSAwaited<void>;
 
 export interface FeatureInterface<T = unknown> {
   callback?: FeatureCallback<T>;
@@ -165,7 +165,7 @@ export interface FeatureInterface<T = unknown> {
 type FeatureCallback<T = unknown> = (destructureThis: {
   client: AFKHandler<T>;
   gadget: AFKHandler<T>["gadget"];
-}) => unknown;
+}) => Awaited<unknown>;
 
 type Permissions =
   | "CREATE_INSTANT_INVITE"

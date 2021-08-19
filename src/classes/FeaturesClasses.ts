@@ -1,3 +1,4 @@
+import { ClientEvents } from "discord.js";
 import { CommandInterface as Cmd,
   EventInterface as Evt, FeatureInterface as Ft, SlashCommandInterface as Scmd } from "../types";
 
@@ -91,17 +92,17 @@ export class SlashCommand<T = unknown> implements Scmd<T> {
   }
 }
 
-export class Event<T = unknown> implements Evt<T> {
-  public readonly name: Evt["name"]
-  public readonly once?: Evt["once"]
-  public readonly callback?: Evt<T>["callback"]
-  public readonly emit?: Evt<T>["callback"]
-  public readonly run?: Evt<T>["callback"]
-  public readonly execute?: Evt<T>["callback"]
-  public readonly fire?: Evt<T>["callback"]
+export class Event<V extends keyof ClientEvents, T = unknown> implements Evt<V, T> {
+  public readonly name: Evt<V, T>["name"]
+  public readonly once?: Evt<V, T>["once"]
+  public readonly callback?: Evt<V, T>["callback"]
+  public readonly emit?: Evt<V, T>["callback"]
+  public readonly run?: Evt<V, T>["callback"]
+  public readonly execute?: Evt<V, T>["callback"]
+  public readonly fire?: Evt<V, T>["callback"]
 
 
-  constructor(options: Evt<T>) {
+  constructor(options: Evt<V, T>) {
     this.name = options.name
     this.once = options.once 
     this.callback = options.callback
@@ -120,7 +121,7 @@ export class Feature<T = unknown> implements Ft<T> {
   public readonly execute?: Ft<T>["callback"]
   public readonly fire?: Ft<T>["callback"]
 
-  constructor(options: Evt<T>) {
+  constructor(options: Ft<T>) {
     this.callback = options.callback
     this.emit = options.emit
     this.execute = options.execute

@@ -1,5 +1,6 @@
 import {
   Client as DJSClient,
+  ClientEvents,
   Collection as Map,
   Guild,
   GuildMember,
@@ -448,9 +449,9 @@ export default class AFKHandler<T = unknown>
 
   public Events(
     dir: string,
-    callback?: (event: EventInterface, file: string) => unknown
+    callback?: (event: EventInterface<keyof ClientEvents>, file: string) => unknown
   ) {
-    this._loader<EventInterface>(dir, (event, file) => {
+    this._loader<EventInterface<keyof ClientEvents>>(dir, (event, file) => {
       if (!event.name)
         throw new Error(
           "AFKHandler events " + file + " ERROR: there's no event name"
