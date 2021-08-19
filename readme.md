@@ -1,0 +1,1 @@
+<h1>READ OUR [GUIDE](https://away-from-keyboard.gitbook.io/afkhandler/)<h1>
