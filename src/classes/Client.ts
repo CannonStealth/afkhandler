@@ -56,7 +56,10 @@ export default class AFKHandler<T = unknown>
     const files = await readdir(join(process.cwd(), dir));
     for (const file of files) {
       const stat = await lstat(join(process.cwd(), dir, file));
-      if (stat.isDirectory()) this.load(join(process.cwd(), dir));
+      if (stat.isDirectory()) { 
+        this.load(join(process.cwd(), dir, file));
+        continue;
+      }
       else if (
         !file.endsWith(".js") &&
         !file.endsWith(".coffee") &&
