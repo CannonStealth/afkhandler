@@ -577,6 +577,7 @@ export default class AFKHandler<T = unknown>
   }
 
   public async deleteSlash(name: string, guilds?: Snowflake[]) {
+    try {
     if (!this.application) throw new Error("AFKHandler deleteSlash method ERROR: Client isn't logged in") 
 
     if (!guilds || !guilds.length) {
@@ -584,9 +585,11 @@ export default class AFKHandler<T = unknown>
 
     const command = commands.find(c => c.name.toLowerCase() === name.toLowerCase())
 
-    if (!command) return
+    if (!command) return false
 
-    return command.delete()
+    const deleted = await command.delete()
+
+    return deleted
 
     } 
 
@@ -595,13 +598,12 @@ export default class AFKHandler<T = unknown>
     for (const guildId of guilds) {
 
       const guild = await this.guilds.fetch(guildId)
-      .catch(() => { throw new Error("AFKHandler deleteSlash method ERROR: Unknown guild") })
 
       const commands = await guild.commands.fetch()
 
       const command = commands.find(c => c.name.toLowerCase() === name.toLowerCase())
 
-      if (!command) return 
+      if (!command) continue 
 
        const deleted = await command.delete()
 
@@ -610,6 +612,10 @@ export default class AFKHandler<T = unknown>
     }
 
     return arr
+  } catch (e) {
+    console.log(e)
+    return false
+  }
 
   }
   public convertLong(converted: number[]) {
